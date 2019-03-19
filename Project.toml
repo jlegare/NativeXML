@@ -1,0 +1,4 @@
+name = "NativeXML"
+uuid = "da9a4a08-482b-11e9-3d61-11b3f70459d3"
+authors = ["Jacques Légaré <jacques.legare70@gmail.com>"]
+version = "0.1.0"
