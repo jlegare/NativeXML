@@ -32,11 +32,21 @@ module Lexical
     vi      # value indicator ... =
 end
 
+
 struct Token
    token_type  ::TokenType
    value       ::String
    file_name   ::String
    line_number ::UInt64
+end
+
+
+function peek(io, count::Int64 = 1)
+    mark(io)
+    buffer = String(read(io, count))
+    reset(io)
+
+    return buffer
 end
 
 end
