@@ -1,5 +1,10 @@
 module Lexical
 
+# REFERENCES
+#
+#    [1] Extensible Markup Language (XML) 1.0 (Fifth Edition),
+#        https://www.w3.org/TR/xml/
+
 # ----------------------------------------
 # EXPORTED INTERFACE
 # ----------------------------------------
@@ -40,6 +45,7 @@ export tokens
     tagc    # tag close ... >
     net     # null end tag ... /
     vi      # value indicator ... =
+    ws      # XML white-space ... see [1], § 2.3
     eoi     # end of input
     text    # anything else
 end
@@ -91,6 +97,8 @@ const OneCharacterTokens = Dict('>'  => mdc,
 
 const TokenStarts = Set([ '\"', '#', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '/', ';', '<', '=', '>', '?', '[', ']', '|' ])
 
+const WhiteSpaces = Set([ '\u20', '\u09', '\u0a', '\u0d' ])
+
 # ----------------------------------------
 # FUNCTIONS
 # ----------------------------------------
@@ -104,12 +112,27 @@ function consume_until(io, end_markers::Set{Char})
         if c ∈ end_markers
             break
         end
-    end        
+    end
 
     if eof(io)
         # This will get stripped by the caller.
         #
         push!(consumed, '\0')
+    end
+
+    return consumed
+end
+
+
+function consume_while(io, set::Set{Char})
+    consumed = Array{Char, 1}()
+
+    while !eof(io)
+        c = read(io, Char)
+        if c ∉ set
+            break
+        end
+        push!(consumed, c)
     end
 
     return consumed
@@ -131,7 +154,7 @@ function next(io)::Union{Token, Nothing}
         return nothing
     end
 
-    # Okay, that's out of the way. Try the two-character tokens first. 
+    # Okay, that's out of the way. Try the two-character tokens first.
     #
     mark(io)
     if bytesavailable(io) >= 2 && haskey(TwoCharacterTokens, [ read(io, Char) for i ∈ 1:2 ])
@@ -154,11 +177,23 @@ function next(io)::Union{Token, Nothing}
         else
             reset(io)
             mark(io)
-            consumed = consume_until(io, TokenStarts)
-            reset(io)
-            value = [ read(io, Char) for i ∈ 1:length(consumed) - 1 ]
+            consumed = consume_until(io, union(TokenStarts, WhiteSpaces))
 
-            return Token(text, String(value), identification_of(io), -1)
+            if length(consumed) > 1
+                reset(io)
+                value = [ read(io, Char) for i ∈ 1:length(consumed) - 1 ]
+
+                return Token(text, String(value), identification_of(io), -1)
+
+            else
+                reset(io)
+                mark(io)
+                consumed = consume_while(io, WhiteSpaces)
+                reset(io)
+                value = [ read(io, Char) for i ∈ 1:length(consumed) ]
+
+                return Token(ws, String(value), identification_of(io), -1)
+            end
         end
     end
 end
@@ -177,7 +212,7 @@ function tokens(io)
         end
     end
 
-    return Channel(tokenized)
+    return Channel(tokenized; ctype=Token, csize=0)
 end
 
 end
