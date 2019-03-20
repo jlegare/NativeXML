@@ -2,7 +2,9 @@ module Lexical
 
 # REFERENCES
 #
-#    [1] Extensible Markup Language (XML) 1.0 (Fifth Edition),
+#    [1] ISO 8879:1986 Information processing -- Text and office systems -- Standard Generalized Markup Language (SGML)
+#        https://www.iso.org/standard/16387.html
+#    [2] Extensible Markup Language (XML) 1.0 (Fifth Edition),
 #        https://www.w3.org/TR/xml/
 
 # ----------------------------------------
@@ -16,6 +18,8 @@ export tokens
 # ----------------------------------------
 
 @enum TokenType begin
+    # These token names and values come from the SGML specification. See [1].
+    #
     mdo     # markup delimiter open ... <!
     mdc     # markup delimiter close ... >
     dso     # declaration subset open ... [
@@ -45,7 +49,10 @@ export tokens
     tagc    # tag close ... >
     net     # null end tag ... /
     vi      # value indicator ... =
-    ws      # XML white-space ... see [1], § 2.3
+
+    # The rest of these don't represent traditional SGML tokens.
+    #
+    ws      # XML white-space ... see [2], § 2.3
     eoi     # end of input
     text    # anything else
 end
