@@ -61,6 +61,13 @@ end
 # TYPE DECLARATIONS
 # ----------------------------------------
 
+mutable struct State
+   io          ::IOStream
+   line_number ::Int64
+   last_match  ::Union{Nothing, Array{Char, 1}}
+end
+
+
 struct Token
    token_type     ::TokenType
    value          ::String
@@ -78,7 +85,7 @@ const TwoCharacterTokens = Dict([ '<', '!' ] => mdo,
                                 [ '&', '#' ] => cro,
                                 [ '<', '?' ] => pio,
                                 [ '?', '>' ] => pic,
-                                [ '<', '/' ] => stago)
+                                [ '<', '/' ] => etago)
 const OneCharacterTokens = Dict('>'  => mdc,
                                 '['  => dso,
                                 ']'  => dsc,
@@ -110,32 +117,43 @@ const WhiteSpaces = Set([ '\u20', '\u09', '\u0a', '\u0d' ])
 # FUNCTIONS
 # ----------------------------------------
 
-function consume_until(io, end_markers::Set{Char})
+function State(io::IOStream)
+    return State(io, -1, nothing)
+end
+
+
+function Token(token_type::TokenType, token_value::String, state::State)
+    return Token(token_type, token_value, identification_of(state)...)
+end
+
+
+function consume_last_match(state::State)
+    skip(state.io, length(state.last_match))
+
+    return state.last_match
+end
+
+
+function consume_until(state::State, end_markers::Set{Char})
     consumed = Array{Char, 1}()
 
-    while !eof(io)
-        c = read(io, Char)
-        push!(consumed, c)
+    while !eof(state.io)
+        c = read(state.io, Char)
         if c ∈ end_markers
             break
         end
-    end
-
-    if eof(io)
-        # This will get stripped by the caller.
-        #
-        push!(consumed, '\0')
+        push!(consumed, c)
     end
 
     return consumed
 end
 
 
-function consume_while(io, set::Set{Char})
+function consume_while(state::State, set::Set{Char})
     consumed = Array{Char, 1}()
 
-    while !eof(io)
-        c = read(io, Char)
+    while !eof(state.io)
+        c = read(state.io, Char)
         if c ∉ set
             break
         end
@@ -146,70 +164,143 @@ function consume_while(io, set::Set{Char})
 end
 
 
-function identification_of(io::IOStream)
-    return io.name
-end
-
-
-function identification_of(io)
-    return "a buffer"
-end
-
-
-function next(io)::Union{Token, Nothing}
-    if eof(io)
-        return nothing
+function identification_of(state::State)
+    function name_of(io::IOStream)
+        return io.name
     end
 
-    # Okay, that's out of the way. Try the two-character tokens first.
-    #
-    mark(io)
-    if bytesavailable(io) >= 2 && haskey(TwoCharacterTokens, [ read(io, Char) for i ∈ 1:2 ])
-        reset(io)
-        value = [ read(io, Char) for i ∈ 1:2 ]
 
-        return Token(TwoCharacterTokens[value], String(value), identification_of(io), -1)
+    function name_of(io)
+        return "a buffer"
+    end
+
+
+    return ( name_of(state.io), -1 )
+end
+
+
+function is_delimiter_one(state::State)::Bool
+    if eof(state.io)
+        return false
 
     else
-        # Now try the one-character tokens.
-        #
-        reset(io)
-        mark(io)
-        if haskey(OneCharacterTokens, read(io, Char))
-            reset(io)
-            value = read(io, Char)
+        mark(state.io)
+        token_value = read(state.io, Char)
+        reset(state.io)
 
-            return Token(OneCharacterTokens[value], String([ value ]), identification_of(io), -1)
+        if haskey(OneCharacterTokens, token_value)
+            state.last_match = [ token_value ]
+
+            return true
 
         else
-            reset(io)
-            mark(io)
-            consumed = consume_until(io, union(TokenStarts, WhiteSpaces))
+            return false
+        end
+    end
+end
 
-            if length(consumed) > 1
-                reset(io)
-                value = [ read(io, Char) for i ∈ 1:length(consumed) - 1 ]
 
-                return Token(text, String(value), identification_of(io), -1)
+function is_delimiter_two(state::State)::Bool
+    if eof(state.io)
+        return false
+
+    else
+        mark(state.io)
+        first = read(state.io, Char)
+
+        if eof(state.io)
+            reset(state.io)
+
+            return false
+
+        else
+            second = read(state.io, Char)
+            reset(state.io)
+
+            if haskey(TwoCharacterTokens, [ first, second ])
+                state.last_match = [ first, second ]
+
+                return true
 
             else
-                reset(io)
-                mark(io)
-                consumed = consume_while(io, WhiteSpaces)
-                reset(io)
-                value = [ read(io, Char) for i ∈ 1:length(consumed) ]
-
-                return Token(ws, String(value), identification_of(io), -1)
+                return false
             end
         end
     end
 end
 
 
-function tokens(io)
+function is_text(state::State)::Bool
+    if eof(state.io)
+        return false
+
+    else
+        mark(state.io)
+        token_value = consume_until(state, union(TokenStarts, WhiteSpaces))
+        reset(state.io)
+
+        if length(token_value) > 0
+            state.last_match = token_value
+
+            return true
+
+        else
+            return false
+        end
+    end
+end
+
+
+function is_white_space(state::State)::Bool
+    if eof(state.io)
+        return false
+
+    else
+        mark(state.io)
+        token_value = consume_while(state, WhiteSpaces)
+        reset(state.io)
+
+        if length(token_value) > 0
+            state.last_match = token_value
+
+            return true
+
+        else
+            return false
+        end
+    end
+end
+
+
+function next(state::State)::Union{Token, Nothing}
+    if is_delimiter_two(state)
+        token_value = consume_last_match(state)
+
+        return Token(TwoCharacterTokens[token_value], String(token_value), state)
+
+    elseif is_delimiter_one(state)
+        token_value = consume_last_match(state)
+
+        return Token(OneCharacterTokens[token_value[1]], String(token_value), state)
+
+    elseif is_text(state)
+        return Token(text, String(consume_last_match(state)), state)
+
+    elseif is_white_space(state)
+        return Token(ws, String(consume_last_match(state)), state)
+
+    else
+        # I should probably throw an error here.
+        #
+        return nothing
+    end
+end
+
+
+function tokens(state::State)
     function tokenized(channel::Channel)
         while true
-            token = next(io)
+            token = next(state)
             if token == nothing
                 break
 
