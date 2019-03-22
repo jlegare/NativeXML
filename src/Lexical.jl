@@ -21,7 +21,7 @@ export tokens
     # These token names and values come from the SGML specification. See [1].
     #
     mdo     # markup delimiter open ... <!
-    mdc     # markup delimiter close ... >
+    mdc     # markup delimiter close ... > ... this one will never show up ... we'll use tagc instead.
     dso     # declaration subset open ... [
     dsc     # declaration subset close ... ]
     msc     # marked section close ... ]]
@@ -31,19 +31,19 @@ export tokens
     lita    # alternative literal ... '
     grpo    # group open ... (
     grpc    # group close ... )
-    and     # and connector ... &
+    and     # and connector ... & ... this is not actually used in XML, and will never show up because ero will be found instead.
     or      # or connector ... |
     seq     # sequence connector ... ,
     opt     # optional occurrence indicator ... ?
     rep     # zero-or-more occurrence indicator ... *
     plus    # one-or-more occurrence indicator ... +
-    minus   # exclusion/omission flag ... - ... not actually used in XML
+    minus   # exclusion/omission flag ... - ... this is not actually used in XML.
     cro     # character reference open ... &#
     ero     # entity reference open ... &
     pero    # parameter entity reference open ... %
     refc    # reference close ... ;
     pio     # processing instruction open ... <?
-    pic     # processing instruction close ... > ... actually ?> in XML
+    pic     # processing instruction close ... > ... this is actually ?> in XML.
     stago   # start tag open ... <
     etago   # end tag open ... </
     tagc    # tag close ... >
@@ -87,7 +87,7 @@ const TwoCharacterTokens = Dict([ '<', '!' ] => mdo,
                                 [ '<', '?' ] => pio,
                                 [ '?', '>' ] => pic,
                                 [ '<', '/' ] => etago)
-const OneCharacterTokens = Dict('>'  => mdc,
+const OneCharacterTokens = Dict('>'  => mdc, # Again, this will never show up ... we'll always emit tagc instead. 
                                 '['  => dso,
                                 ']'  => dsc,
                                 '#'  => rni,
@@ -95,7 +95,7 @@ const OneCharacterTokens = Dict('>'  => mdc,
                                 '\'' => lita,
                                 '('  => grpo,
                                 ')'  => grpc,
-                                '&'  => and,
+                                '&'  => and, # Again, this will never show up ... we'll always emit ero instead.
                                 '|'  => or,
                                 ','  => seq,
                                 '?'  => opt,
@@ -242,12 +242,12 @@ function is_text(state::State)::Bool
     else
         start = mark(state.io)
         token_value = consume_until(state, union(TokenStarts, WhiteSpaces))
-        current = position(state.io)
+        current = position(state.io) + (eof(state.io) ? 0 : -1) # consume_until() may have read one position too far.
         reset(state.io)
 
         if length(token_value) > 0
             state.last_match = token_value
-            state.length_of  = current - start - 1 # Notice that consume_until() has read one position too far.
+            state.length_of  = current - start
 
             return true
 
@@ -265,7 +265,7 @@ function is_white_space(state::State)::Bool
     else
         start = mark(state.io)
         token_value = consume_while(state, WhiteSpaces)
-        current = position(state.io)
+        current = position(state.io) + (eof(state.io) ? 0 : -1) # consume_while() may have read one position too far.
         reset(state.io)
 
         if length(token_value) > 0
