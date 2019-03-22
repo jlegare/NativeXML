@@ -61,4 +61,36 @@
 
         @test collect(M.tokens(M.State(IOBuffer(" 	\n\r")))) == [ M.Token(M.ws, " 	\n\r",  "a buffer", -1) ]
     end
+
+    @testset "Lexical/Multiple Tokens (Realistic-ish Sequences" begin
+        @test collect(M.tokens(M.State(IOBuffer("<a>")))) == [ M.Token(M.stago, "<",  "a buffer", -1),
+                                                               M.Token(M.text, "a",  "a buffer", -1),
+                                                               M.Token(M.tagc, ">",  "a buffer", -1), ]
+        @test collect(M.tokens(M.State(IOBuffer("<π>")))) == [ M.Token(M.stago, "<",  "a buffer", -1),
+                                                               M.Token(M.text, "π",  "a buffer", -1),
+                                                               M.Token(M.tagc, ">",  "a buffer", -1), ]
+        @test (collect(M.tokens(M.State(IOBuffer("<a a.a=\"Hello, World!\" a.b=\"Salut, Monde!\"/>")))) 
+               == [ M.Token(M.stago, "<",  "a buffer", -1),
+                    M.Token(M.text, "a",  "a buffer", -1),
+                    M.Token(M.ws, " ",  "a buffer", -1),
+                    M.Token(M.text, "a.a",  "a buffer", -1),
+                    M.Token(M.vi, "=",  "a buffer", -1),
+                    M.Token(M.lit, "\"",  "a buffer", -1),
+                    M.Token(M.text, "Hello",  "a buffer", -1),
+                    M.Token(M.seq, ",",  "a buffer", -1),
+                    M.Token(M.ws, " ",  "a buffer", -1),
+                    M.Token(M.text, "World!",  "a buffer", -1),
+                    M.Token(M.lit, "\"",  "a buffer", -1),
+                    M.Token(M.ws, " ",  "a buffer", -1),
+                    M.Token(M.text, "a.b",  "a buffer", -1),
+                    M.Token(M.vi, "=",  "a buffer", -1),
+                    M.Token(M.lit, "\"",  "a buffer", -1),
+                    M.Token(M.text, "Salut",  "a buffer", -1),
+                    M.Token(M.seq, ",",  "a buffer", -1),
+                    M.Token(M.ws, " ",  "a buffer", -1),
+                    M.Token(M.text, "Monde!",  "a buffer", -1),
+                    M.Token(M.lit, "\"",  "a buffer", -1),
+                    M.Token(M.net, "/",  "a buffer", -1),
+                    M.Token(M.tagc, ">",  "a buffer", -1), ])
+    end
 end

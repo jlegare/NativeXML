@@ -136,32 +136,38 @@ end
 
 
 function consume_until(state::State, end_markers::Set{Char})
-    consumed = Array{Char, 1}()
+    consumed   = Array{Char, 1}()
+    start      = position(state.io)
+    bytes_read = 0
 
     while !eof(state.io)
         c = read(state.io, Char)
         if c ∈ end_markers
             break
         end
+        bytes_read = position(state.io) - start
         push!(consumed, c)
     end
 
-    return consumed
+    return ( bytes_read, consumed )
 end
 
 
 function consume_while(state::State, set::Set{Char})
-    consumed = Array{Char, 1}()
+    consumed   = Array{Char, 1}()
+    start      = position(state.io)
+    bytes_read = 0
 
     while !eof(state.io)
         c = read(state.io, Char)
         if c ∉ set
             break
         end
+        bytes_read = position(state.io) - start
         push!(consumed, c)
     end
 
-    return consumed
+    return ( bytes_read, consumed )
 end
 
 
@@ -241,13 +247,12 @@ function is_text(state::State)::Bool
 
     else
         start = mark(state.io)
-        token_value = consume_until(state, union(TokenStarts, WhiteSpaces))
-        current = position(state.io) + (eof(state.io) ? 0 : -1) # consume_until() may have read one position too far.
+        ( bytes_read, token_value ) = consume_until(state, union(TokenStarts, WhiteSpaces))
         reset(state.io)
 
         if length(token_value) > 0
             state.last_match = token_value
-            state.length_of  = current - start
+            state.length_of  = bytes_read
 
             return true
 
@@ -264,13 +269,12 @@ function is_white_space(state::State)::Bool
 
     else
         start = mark(state.io)
-        token_value = consume_while(state, WhiteSpaces)
-        current = position(state.io) + (eof(state.io) ? 0 : -1) # consume_while() may have read one position too far.
+        ( bytes_read, token_value ) = consume_while(state, WhiteSpaces)
         reset(state.io)
 
         if length(token_value) > 0
             state.last_match = token_value
-            state.length_of  = current - start
+            state.length_of  = bytes_read
 
             return true
 
