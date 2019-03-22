@@ -62,9 +62,10 @@ end
 # ----------------------------------------
 
 mutable struct State
-   io          ::IOStream
+   io          ::Union{IOStream, IOBuffer}
    line_number ::Int64
    last_match  ::Union{Nothing, Array{Char, 1}}
+   length_of   ::Int64
 end
 
 
@@ -117,8 +118,8 @@ const WhiteSpaces = Set([ '\u20', '\u09', '\u0a', '\u0d' ])
 # FUNCTIONS
 # ----------------------------------------
 
-function State(io::IOStream)
-    return State(io, -1, nothing)
+function State(io)
+    return State(io, -1, nothing, -1)
 end
 
 
@@ -128,7 +129,7 @@ end
 
 
 function consume_last_match(state::State)
-    skip(state.io, length(state.last_match))
+    skip(state.io, state.length_of) 
 
     return state.last_match
 end
@@ -184,12 +185,14 @@ function is_delimiter_one(state::State)::Bool
         return false
 
     else
-        mark(state.io)
+        start = mark(state.io)
         token_value = read(state.io, Char)
+        current = position(state.io)
         reset(state.io)
 
         if haskey(OneCharacterTokens, token_value)
             state.last_match = [ token_value ]
+            state.length_of  = current - start
 
             return true
 
@@ -205,7 +208,7 @@ function is_delimiter_two(state::State)::Bool
         return false
 
     else
-        mark(state.io)
+        start = mark(state.io)
         first = read(state.io, Char)
 
         if eof(state.io)
@@ -215,10 +218,12 @@ function is_delimiter_two(state::State)::Bool
 
         else
             second = read(state.io, Char)
+            current = position(state.io)
             reset(state.io)
 
             if haskey(TwoCharacterTokens, [ first, second ])
                 state.last_match = [ first, second ]
+                state.length_of  = current - start
 
                 return true
 
@@ -235,12 +240,14 @@ function is_text(state::State)::Bool
         return false
 
     else
-        mark(state.io)
+        start = mark(state.io)
         token_value = consume_until(state, union(TokenStarts, WhiteSpaces))
+        current = position(state.io)
         reset(state.io)
 
         if length(token_value) > 0
             state.last_match = token_value
+            state.length_of  = current - start - 1 # Notice that consume_until() has read one position too far.
 
             return true
 
@@ -256,12 +263,14 @@ function is_white_space(state::State)::Bool
         return false
 
     else
-        mark(state.io)
+        start = mark(state.io)
         token_value = consume_while(state, WhiteSpaces)
+        current = position(state.io)
         reset(state.io)
 
         if length(token_value) > 0
             state.last_match = token_value
+            state.length_of  = current - start
 
             return true
 
