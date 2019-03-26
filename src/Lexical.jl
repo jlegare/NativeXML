@@ -12,6 +12,7 @@ module Lexical
 # ----------------------------------------
 
 export tokens
+export location_of
 
 # ----------------------------------------
 # TOKEN TYPES
@@ -282,6 +283,11 @@ function is_white_space(state::State)::Bool
             return false
         end
     end
+end
+
+
+function location_of(token::Token)
+    return ( token.identification, token.line_number )
 end
 
 
