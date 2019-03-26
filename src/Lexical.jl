@@ -323,7 +323,7 @@ function tokens(state::State)
         end
     end
 
-    return Channel(tokenized; ctype=Token, csize=0)
+    return Channel(tokenized; ctype=Token, csize=1)
 end
 
 end
