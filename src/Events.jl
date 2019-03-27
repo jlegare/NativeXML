@@ -37,6 +37,13 @@ struct CharacterReference
 end
 
 
+struct Comment
+    value          ::String # It's someone else's job to verify that the value is a legitimate character.
+    identification ::String
+    line_number    ::Int64
+end
+
+
 struct EntityReference
     name           ::String
     identification ::String
@@ -166,6 +173,36 @@ function character_reference(tokens)::Union{CharacterReference, MarkupError}
 end
 
 
+function comment(mdo, tokens)::Union{Comment, MarkupError}
+    com = take!(tokens)
+
+    consumed = Array{Lexical.Token, 1}()
+
+    while true
+        if is_token(Lexical.com, tokens)
+            tail = take!(tokens)
+
+            if is_token(Lexical.tagc, tokens)
+                return Comment(join(map(value -> value.value, consumed), ""), Lexical.location_of(mdo)...)
+
+            else
+                t = vcat(mdo, com, consumed, tail)
+
+                return MarkupError("ERROR: '--' is not allowed inside a comment.", t, Lexical.location_of(t[end])...)
+            end
+
+        elseif is_eoi(tokens)
+            t = vcat(mdo, com, consumed)
+
+            return MarkupError("ERROR: Expecting '-->' to end a comment.", t, Lexical.location_of(t[end])...)
+
+        else
+            push!(consumed, take!(tokens))
+        end
+    end
+end
+
+
 function entity_reference(tokens)::Union{EntityReference, MarkupError}
     ero = take!(tokens) # Consume the ERO token that got us here.
 
@@ -208,6 +245,9 @@ function markup_declaration(tokens)
 
     if is_token(Lexical.dso, tokens)
         return cdata_marked_section(mdo, tokens)
+
+    elseif is_token(Lexical.com, tokens)
+        return comment(mdo, tokens)
 
     else
         return MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)...)
