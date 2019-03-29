@@ -247,7 +247,7 @@ function collect_attributes(tokens)
                     push!(value, character_reference(tokens))
 
                 elseif is_token(Lexical.ero, tokens)
-                    push!(value, entity_reference(tokens))
+                    push!(value, entity_reference(tokens, true))
 
                 elseif is_token(Lexical.stago, tokens)
                     stago = take!(tokens)
@@ -572,7 +572,12 @@ function entity_reference(tokens, in_attribute = false)
         end
 
     else
-        return MarkupError("ERROR: Expecting an entity name.", [ ero ], Lexical.location_of(ero)...)
+        if in_attribute
+            return MarkupError("ERROR: A '&' must be escaped inside an attribute value.", [ ero ], Lexical.location_of(ero)...)
+
+        else
+            return MarkupError("ERROR: Expecting an entity name.", [ ero ], Lexical.location_of(ero)...)
+        end
     end
 end
 
