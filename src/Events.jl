@@ -23,8 +23,14 @@ import .Lexical
 # TYPE DECLARATIONS
 # ----------------------------------------
 
-struct CDATAMarkedSection
-    value          ::String
+struct CDATAMarkedSectionStart
+    identification ::String
+    line_number    ::Int64
+end
+
+
+struct CDATAMarkedSectionEnd
+    is_recovery    ::Bool
     identification ::String
     line_number    ::Int64
 end
@@ -37,8 +43,21 @@ struct CharacterReference
 end
 
 
-struct Comment
-    value          ::String # It's someone else's job to verify that the value is a legitimate character.
+struct CommentStart
+    identification ::String
+    line_number    ::Int64
+end
+
+
+struct CommentEnd
+    is_recovery    ::Bool
+    identification ::String
+    line_number    ::Int64
+end
+
+
+struct DataContent
+    value          ::String
     identification ::String
     line_number    ::Int64
 end
@@ -70,31 +89,18 @@ end
 # FUNCTIONS
 # ----------------------------------------
 
-function events(state::Lexical.State)
-    tokens = Lexical.tokens(state)
 
-    while true
-        if is_token(Lexical.mdo, tokens)
-            @show markup_declaration(tokens)
-
-        elseif is_token(Lexical.cro, tokens)
-            @show character_reference(tokens)
-
-        elseif is_token(Lexical.ero, tokens)
-            @show entity_reference(tokens)
-
-        elseif is_token(Lexical.pio, tokens)
-            @show processing_instruction(tokens)
-
-        else
-            @info "NOPE!"
-            break
-        end
-    end
+function CommentEnd(identification, line_number)
+    return CommentEnd(false, identification, line_number)
 end
 
 
-function cdata_marked_section(mdo, tokens)
+function CDATAMarkedSectionEnd(identification, line_number)
+    return CDATAMarkedSectionEnd(false, identification, line_number)
+end
+
+
+function cdata_marked_section(mdo, tokens, channel)
     dso = take!(tokens)
 
     if is_token(Lexical.text, tokens)
@@ -106,6 +112,8 @@ function cdata_marked_section(mdo, tokens)
             if is_token(Lexical.dso, tokens)
                 take!(tokens)
 
+                put!(channel, CDATAMarkedSectionStart(Lexical.location_of(mdo)...))
+
                 consumed = Array{Lexical.Token, 1}()
 
                 while true
@@ -113,47 +121,49 @@ function cdata_marked_section(mdo, tokens)
                         msc = take!(tokens)
 
                         if is_token(Lexical.tagc, tokens)
-                            return CDATAMarkedSection(join(map(value -> value.value, consumed), ""),
-                                                      Lexical.location_of(mdo)...)
+                            take!(tokens)
+                            put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(mdo)...))
+                            put!(channel, CDATAMarkedSectionEnd(Lexical.location_of(msc)...))
+                            break
 
                         else
-                            t = vcat(mdo, dso, text, consumed, msc)
-
-                            return MarkupError("ERROR: Expecting '>' to end a CDATA marked section.", t,
-                                               Lexical.location_of(t[end])...)
+                            put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(mdo)...))
+                            put!(channel, MarkupError("ERROR: Expecting '>' to end a CDATA marked section.", [ msc ],
+                                                      Lexical.location_of(msc)...))
+                            put!(channel, CDATAMarkedSectionEnd(true, Lexical.location_of(msc)...))
+                            break
                         end
 
                     elseif is_eoi(tokens)
-                        t = vcat(mdo, dso, text, consumed)
-
-                        return MarkupError("ERROR: Expecting ']]>' to end a CDATA marked section.", t,
-                                           Lexical.location_of(t[end])...)
+                        put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(mdo)...))
+                        put!(channel, MarkupError("ERROR: Expecting ']]>' to end a CDATA marked section.", [ ],
+                                                  Lexical.location_of(consumed[end])...))
+                        put!(channel, CDATAMarkedSectionEnd(true, Lexical.location_of(consumed[end])...))
+                        break
 
                     else
                         push!(consumed, take!(tokens))
                     end
                 end
 
-                # Handle the content of a CDATA marked section here.
-
             else
-                return MarkupError("ERROR: Expecting '[' to open a CDATA marked section.", [ mdo, dso, text ],
-                                   Lexical.location_of(text)...)
+                put!(channel, MarkupError("ERROR: Expecting '[' to open a CDATA marked section.", [ mdo, dso, text ],
+                                          Lexical.location_of(text)...))
             end
 
         else
-            return MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],
-                               Lexical.location_of(dso)...)
+            put!(channel, MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],
+                                      Lexical.location_of(dso)...))
         end
 
     else
-        return MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],
-                           Lexical.location_of(dso)...)
+        put!(channel, MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],
+                                  Lexical.location_of(dso)...))
     end
 end
 
 
-function character_reference(tokens)::Union{CharacterReference, MarkupError}
+function character_reference(tokens, channel)
     cro = take!(tokens) # Consume the CRO token that got us here.
 
     if is_token(Lexical.text, tokens)
@@ -161,40 +171,55 @@ function character_reference(tokens)::Union{CharacterReference, MarkupError}
         if is_token(Lexical.refc, tokens)
             refc = take!(tokens)
 
-            return CharacterReference(value.value, Lexical.location_of(cro)...)
+            put!(channel, CharacterReference(value.value, Lexical.location_of(cro)...))
 
         else
-            return MarkupError("ERROR: Expecting ';' to end a character reference.", [ ero, value ], Lexical.location_of(name)...)
+            put!(channel, MarkupError("ERROR: Expecting ';' to end a character reference.", [ ero, value ], 
+                                      Lexical.location_of(name)...))
         end
 
     else
-        return MarkupError("ERROR: Expecting a character value.", [ ero ], Lexical.location_of(ero)...)
+        put!(channel, MarkupError("ERROR: Expecting a character value.", [ ero ], Lexical.location_of(ero)...))
     end
 end
 
 
-function comment(mdo, tokens)::Union{Comment, MarkupError}
+function comment(mdo, tokens, channel)
     com = take!(tokens)
 
     consumed = Array{Lexical.Token, 1}()
+
+    put!(channel, CommentStart(Lexical.location_of(mdo)...))
 
     while true
         if is_token(Lexical.com, tokens)
             tail = take!(tokens)
 
             if is_token(Lexical.tagc, tokens)
-                return Comment(join(map(value -> value.value, consumed), ""), Lexical.location_of(mdo)...)
+                take!(tokens)
+                put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(consumed[1])...))
+                put!(channel, CommentEnd(Lexical.location_of(mdo)...))
+                break
+
+            elseif is_eoi(tokens)
+                put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(consumed[1])...))
+                put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], Lexical.location_of(consumed[end])...))
+                put!(channel, CommentEnd(true, Lexical.location_of(consumed[end])...))
+                break
 
             else
-                t = vcat(mdo, com, consumed, tail)
-
-                return MarkupError("ERROR: '--' is not allowed inside a comment.", t, Lexical.location_of(t[end])...)
+                put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(consumed[1])...))
+                put!(channel, MarkupError("ERROR: '--' is not allowed inside a comment.", [ ], 
+                                          Lexical.location_of(consumed[end])...))
+                put!(channel, CommentEnd(true, Lexical.location_of(consumed[end])...))
+                break
             end
 
         elseif is_eoi(tokens)
-            t = vcat(mdo, com, consumed)
-
-            return MarkupError("ERROR: Expecting '-->' to end a comment.", t, Lexical.location_of(t[end])...)
+            put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(consumed[1])...))
+            put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], Lexical.location_of(consumed[end])...))
+            put!(channel, CommentEnd(true, Lexical.location_of(consumed[end])...))
+            break
 
         else
             push!(consumed, take!(tokens))
@@ -203,7 +228,7 @@ function comment(mdo, tokens)::Union{Comment, MarkupError}
 end
 
 
-function entity_reference(tokens)::Union{EntityReference, MarkupError}
+function entity_reference(tokens, channel)
     ero = take!(tokens) # Consume the ERO token that got us here.
 
     if is_token(Lexical.text, tokens)
@@ -211,15 +236,43 @@ function entity_reference(tokens)::Union{EntityReference, MarkupError}
         if is_token(Lexical.refc, tokens)
             refc = take!(tokens)
 
-            return EntityReference(name.value, Lexical.location_of(ero)...)
+            put!(channel, EntityReference(name.value, Lexical.location_of(ero)...))
 
         else
-            return MarkupError("ERROR: Expecting ';' to end an entity reference.", [ ero, name ], Lexical.location_of(name)...)
+            put!(channel, MarkupError("ERROR: Expecting ';' to end an entity reference.", [ ero, name ], 
+                                      Lexical.location_of(name)...))
         end
 
     else
-        return MarkupError("ERROR: Expecting an entity name.", [ ero ], Lexical.location_of(ero)...)
+        put!(channel, MarkupError("ERROR: Expecting an entity name.", [ ero ], Lexical.location_of(ero)...))
     end
+end
+
+
+function events(state::Lexical.State)
+    function eventified(channel::Channel)
+        tokens = Lexical.tokens(state)
+
+        while true
+            if is_token(Lexical.mdo, tokens)
+                markup_declaration(tokens, channel)
+
+            elseif is_token(Lexical.cro, tokens)
+                character_reference(tokens, channel)
+
+            elseif is_token(Lexical.ero, tokens)
+                entity_reference(tokens, channel)
+
+            elseif is_token(Lexical.pio, tokens)
+                processing_instruction(tokens, channel)
+
+            else
+                break
+            end
+        end
+    end
+
+    return Channel(eventified; csize = 1)
 end
 
 
@@ -240,22 +293,22 @@ function is_token(token_type, tokens)
 end
 
 
-function markup_declaration(tokens)
+function markup_declaration(tokens, channel)
     mdo = take!(tokens) # Consume the MDO token that got us here.
 
     if is_token(Lexical.dso, tokens)
-        return cdata_marked_section(mdo, tokens)
+        cdata_marked_section(mdo, tokens, channel)
 
     elseif is_token(Lexical.com, tokens)
-        return comment(mdo, tokens)
+        comment(mdo, tokens, channel)
 
     else
-        return MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)...)
+        put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)...))
     end
 end
 
 
-function processing_instruction(tokens)::Union{ProcessingInstruction, MarkupError}
+function processing_instruction(tokens, channel)
     pio = take!(tokens) # Consume the PIO token that got us here.
 
     if is_token(Lexical.text, tokens)
@@ -272,13 +325,16 @@ function processing_instruction(tokens)::Union{ProcessingInstruction, MarkupErro
                 if is_token(Lexical.pic, tokens)
                     take!(tokens)
 
-                    return ProcessingInstruction(target.value, join(map(value -> value.value, consumed), ""),
-                                                 Lexical.location_of(pio)...)
+                    put!(channel, ProcessingInstruction(target.value, join(map(value -> value.value, consumed), ""),
+                                                        Lexical.location_of(pio)...))
+                    break
 
                 elseif is_eoi(tokens)
                     t = vcat(pio, consumed)
 
-                    return MarkupError("ERROR: Expecting '?>' to end a processing instruction.", t, Lexical.location_of(t[end])...)
+                    put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", t, 
+                                              Lexical.location_of(t[end])...))
+                    break
 
                 else
                     push!(consumed, take!(tokens))
@@ -288,15 +344,15 @@ function processing_instruction(tokens)::Union{ProcessingInstruction, MarkupErro
         elseif is_token(Lexical.pic, tokens)
             take!(tokens)
 
-            return ProcessingInstruction(target.value, "", Lexical.location_of(pio)...)
+            put!(channel, ProcessingInstruction(target.value, "", Lexical.location_of(pio)...))
 
         else
-            return MarkupError("ERROR: Expecting '?>' to end a processing instruction.", [ target ] ,
-                               Lexical.location_of(target)...)
+            put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", [ target ] ,
+                                      Lexical.location_of(target)...))
         end
 
     else
-        return MarkupError("ERROR: Expecting a PI target.", [ pio ], Lexical.location_of(pio)...)
+        put!(channel, MarkupError("ERROR: Expecting a PI target.", [ pio ], Lexical.location_of(pio)...))
     end
 end
 
