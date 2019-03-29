@@ -58,12 +58,20 @@ end
 
 struct DataContent
     value          ::String
+    is_ws          ::Bool
     identification ::String
     line_number    ::Int64
 end
 
 
-struct EntityReference
+struct EntityReferenceGeneral
+    name           ::String
+    identification ::String
+    line_number    ::Int64
+end
+
+
+struct EntityReferenceParameter
     name           ::String
     identification ::String
     line_number    ::Int64
@@ -85,6 +93,31 @@ struct MarkupError
     line_number    ::Int64
 end
 
+
+struct AttributeSpecification
+    name           ::String
+    value          ::Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter, MarkupError}, 1}
+    identification ::String
+    line_number    ::Int64
+end
+
+
+struct ElementEnd
+    is_recovery    ::Bool
+    name           ::String
+    identification ::String
+    line_number    ::Int64
+end
+
+
+struct ElementStart
+    is_recovery    ::Bool
+    name           ::String
+    attributes     ::Array{AttributeSpecification, 1}
+    identification ::String
+    line_number    ::Int64
+end
+
 # ----------------------------------------
 # FUNCTIONS
 # ----------------------------------------
@@ -97,6 +130,21 @@ end
 
 function CDATAMarkedSectionEnd(identification, line_number)
     return CDATAMarkedSectionEnd(false, identification, line_number)
+end
+
+
+function DataContent(value, identification, line_number)
+    return DataContent(value, false, identification, line_number)
+end
+
+
+function ElementEnd(name, identification, line_number)
+    return ElementEnd(false, name, identification, line_number)
+end
+
+
+function ElementStart(name, attributes, identification, line_number)
+    return ElementStart(false, name, attributes, identification, line_number)
 end
 
 
@@ -163,24 +211,78 @@ function cdata_marked_section(mdo, tokens, channel)
 end
 
 
-function character_reference(tokens, channel)
-    cro = take!(tokens) # Consume the CRO token that got us here.
-
-    if is_token(Lexical.text, tokens)
-        value = take!(tokens)
-        if is_token(Lexical.refc, tokens)
-            refc = take!(tokens)
-
-            put!(channel, CharacterReference(value.value, Lexical.location_of(cro)...))
-
-        else
-            put!(channel, MarkupError("ERROR: Expecting ';' to end a character reference.", [ ero, value ], 
-                                      Lexical.location_of(name)...))
+function collect_attributes(tokens)
+    function collect_attribute(tokens)
+        name = take!(tokens) # Collect the attribute name token that got us here.
+        if is_token(Lexical.ws, tokens)
+            take!(tokens)
         end
 
-    else
-        put!(channel, MarkupError("ERROR: Expecting a character value.", [ ero ], Lexical.location_of(ero)...))
+        value = Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter, MarkupError}, 1}()
+
+        if is_token(Lexical.vi, tokens)
+            vi = take!(tokens)
+            if is_token(Lexical.ws, tokens)
+                take!(tokens)
+            end
+            collect_attribute_value(value, tokens)
+
+        else
+            push!(value, MarkupError("ERROR: Expecting '=' after an attribute name.", [ ], Lexical.location_of(name)...))
+        end
+
+        return AttributeSpecification(name.value, value, Lexical.location_of(name)...)
     end
+
+    function collect_attribute_value(value, tokens)
+        if is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
+            delimiter = take!(tokens)
+
+            while true
+                if fetch(tokens).token_type == delimiter.token_type
+                    take!(tokens)
+                    break
+
+                elseif is_token(Lexical.cro, tokens)
+                    push!(value, character_reference(tokens))
+
+                elseif is_token(Lexical.ero, tokens)
+                    push!(value, entity_reference(tokens))
+
+                elseif is_token(Lexical.stago, tokens)
+                    stago = take!(tokens)
+                    push!(value, MarkupError("ERROR: A '<' must escaped inside an attribute value.", [ stago ],
+                                             Lexical.location_of(stago)...))
+
+                elseif is_token(Lexical.ws, tokens)
+                    ws = take!(tokens)
+                    push!(value, DataContent(ws.value, true, Lexical.location_of(ws)...))
+
+                else
+                    data_content = take!(tokens)
+                    push!(value, DataContent(data_content.value, Lexical.location_of(data_content)...))
+                end
+            end
+        end
+    end
+
+
+    attributes = Array{AttributeSpecification, 1}()
+
+    while true
+        if is_token(Lexical.ws, tokens)
+            take!(tokens)
+        end
+
+        if is_token(Lexical.text, tokens)
+            push!(attributes, collect_attribute(tokens))
+
+        else
+            break
+        end
+    end
+
+    return attributes
 end
 
 
@@ -209,7 +311,7 @@ function comment(mdo, tokens, channel)
 
             else
                 put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(consumed[1])...))
-                put!(channel, MarkupError("ERROR: '--' is not allowed inside a comment.", [ ], 
+                put!(channel, MarkupError("ERROR: '--' is not allowed inside a comment.", [ ],
                                           Lexical.location_of(consumed[end])...))
                 put!(channel, CommentEnd(true, Lexical.location_of(consumed[end])...))
                 break
@@ -228,23 +330,68 @@ function comment(mdo, tokens, channel)
 end
 
 
-function entity_reference(tokens, channel)
-    ero = take!(tokens) # Consume the ERO token that got us here.
+function element_end(tokens, channel)
+    etago = take!(tokens) # Consume the ETAGO that got us here.
 
     if is_token(Lexical.text, tokens)
         name = take!(tokens)
-        if is_token(Lexical.refc, tokens)
-            refc = take!(tokens)
+        if is_token(Lexical.ws, tokens) # Trailing white space is allowed ...
+            take!(tokens)               # ... and just discard it.
+        end
 
-            put!(channel, EntityReference(name.value, Lexical.location_of(ero)...))
+        if is_token(Lexical.tagc, tokens)
+            take!(tokens)
+            put!(channel, ElementEnd(name.value, Lexical.location_of(name)...))
 
         else
-            put!(channel, MarkupError("ERROR: Expecting ';' to end an entity reference.", [ ero, name ], 
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an element close tag.", [ etago ],
+                                      Lexical.location_of(name)...))
+            put!(channel, ElementEnd(true, name.value, Lexical.location_of(name)...))
+        end
+
+    else
+        put!(channel, MarkupError("ERROR: Expecting an element name.", [ etago ], Lexical.location_of(etago)...))
+    end
+end
+
+
+function element_start(tokens, channel)
+    stago = take!(tokens) # Consume the STAGO that got us here.
+
+    if is_token(Lexical.text, tokens)
+        name = take!(tokens)
+        attributes = collect_attributes(tokens)
+
+        if is_token(Lexical.ws, tokens) # Trailing white space is allowed ...
+            take!(tokens)               # ... and just discard it.
+        end
+
+        if is_token(Lexical.net, tokens)
+            take!(tokens)
+            if is_token(Lexical.tagc, tokens)
+                take!(tokens)
+                put!(channel, ElementStart(name.value, attributes, Lexical.location_of(name)...))
+                put!(channel, ElementEnd(name.value, Lexical.location_of(name)...))
+
+            else
+                put!(channel, ElementStart(true, name.value, attributes, Lexical.location_of(name)...))
+                put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ stago ],
+                                          Lexical.location_of(name)...))
+                put!(channel, ElementEnd(true, name.value, Lexical.location_of(name)...))
+            end
+
+        elseif is_token(Lexical.tagc, tokens)
+            take!(tokens)
+            put!(channel, ElementStart(name.value, attributes, Lexical.location_of(name)...))
+
+        else
+            put!(channel, ElementStart(true, name.value, attributes, Lexical.location_of(name)...))
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ stago ],
                                       Lexical.location_of(name)...))
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting an entity name.", [ ero ], Lexical.location_of(ero)...))
+        put!(channel, MarkupError("ERROR: Expecting an element name.", [ stago ], Lexical.location_of(stago)...))
     end
 end
 
@@ -258,13 +405,22 @@ function events(state::Lexical.State)
                 markup_declaration(tokens, channel)
 
             elseif is_token(Lexical.cro, tokens)
-                character_reference(tokens, channel)
+                put!(channel, character_reference(tokens))
 
             elseif is_token(Lexical.ero, tokens)
-                entity_reference(tokens, channel)
+                put!(channel, entity_reference(tokens))
+
+            elseif is_token(Lexical.pero, tokens)
+                parameter_entity_reference(tokens, channel)
 
             elseif is_token(Lexical.pio, tokens)
                 processing_instruction(tokens, channel)
+
+            elseif is_token(Lexical.stago, tokens)
+                element_start(tokens, channel)
+
+            elseif is_token(Lexical.etago, tokens)
+                element_end(tokens, channel)
 
             else
                 break
@@ -308,6 +464,27 @@ function markup_declaration(tokens, channel)
 end
 
 
+function parameter_entity_reference(tokens, channel)
+    pero = take!(tokens) # Consume the PERO token that got us here.
+
+    if is_token(Lexical.text, tokens)
+        name = take!(tokens)
+        if is_token(Lexical.refc, tokens)
+            refc = take!(tokens)
+
+            put!(channel, EntityReferenceParameter(name.value, Lexical.location_of(pero)...))
+
+        else
+            put!(channel, MarkupError("ERROR: Expecting ';' to end a parameter entity reference.", [ pero, name ],
+                                      Lexical.location_of(name)...))
+        end
+
+    else
+        put!(channel, MarkupError("ERROR: Expecting a parameter entity name.", [ pero ], Lexical.location_of(pero)...))
+    end
+end
+
+
 function processing_instruction(tokens, channel)
     pio = take!(tokens) # Consume the PIO token that got us here.
 
@@ -332,7 +509,7 @@ function processing_instruction(tokens, channel)
                 elseif is_eoi(tokens)
                     t = vcat(pio, consumed)
 
-                    put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", t, 
+                    put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", t,
                                               Lexical.location_of(t[end])...))
                     break
 
@@ -355,5 +532,49 @@ function processing_instruction(tokens, channel)
         put!(channel, MarkupError("ERROR: Expecting a PI target.", [ pio ], Lexical.location_of(pio)...))
     end
 end
+
+# ----------------------------------------
+# SMALL PARSERS
+# ----------------------------------------
+
+function character_reference(tokens)
+    cro = take!(tokens) # Consume the CRO token that got us here.
+
+    if is_token(Lexical.text, tokens)
+        value = take!(tokens)
+        if is_token(Lexical.refc, tokens)
+            refc = take!(tokens)
+
+            return CharacterReference(value.value, Lexical.location_of(cro)...)
+
+        else
+            return MarkupError("ERROR: Expecting ';' to end a character reference.", [ ero, value ], Lexical.location_of(name)...)
+        end
+
+    else
+        return MarkupError("ERROR: Expecting a character value.", [ ero ], Lexical.location_of(ero)...)
+    end
+end
+
+
+function entity_reference(tokens, in_attribute = false)
+    ero = take!(tokens) # Consume the ERO token that got us here.
+
+    if is_token(Lexical.text, tokens)
+        name = take!(tokens)
+        if is_token(Lexical.refc, tokens)
+            refc = take!(tokens)
+
+            return EntityReferenceGeneral(name.value, Lexical.location_of(ero)...)
+
+        else
+            return MarkupError("ERROR: Expecting ';' to end an entity reference.", [ ero, name ], Lexical.location_of(name)...)
+        end
+
+    else
+        return MarkupError("ERROR: Expecting an entity name.", [ ero ], Lexical.location_of(ero)...)
+    end
+end
+
 
 end
