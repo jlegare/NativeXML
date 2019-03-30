@@ -88,7 +88,7 @@ end
 
 struct MarkupError
     message        ::String # I'll eventually do something more sophisticated here.
-    consumed       ::Array{Lexical.Token, 1}
+    discarded      ::Array{Lexical.Token, 1}
     identification ::String
     line_number    ::Int64
 end
@@ -122,30 +122,12 @@ end
 # FUNCTIONS
 # ----------------------------------------
 
-
-function CommentEnd(identification, line_number)
-    return CommentEnd(false, identification, line_number)
-end
-
-
-function CDATAMarkedSectionEnd(identification, line_number)
-    return CDATAMarkedSectionEnd(false, identification, line_number)
-end
-
-
-function DataContent(value, identification, line_number)
-    return DataContent(value, false, identification, line_number)
-end
-
-
-function ElementEnd(name, identification, line_number)
-    return ElementEnd(false, name, identification, line_number)
-end
-
-
-function ElementStart(name, attributes, identification, line_number)
-    return ElementStart(false, name, attributes, identification, line_number)
-end
+CommentEnd(identification, line_number) = CommentEnd(false, identification, line_number)
+CDATAMarkedSectionEnd(identification, line_number) = CDATAMarkedSectionEnd(false, identification, line_number)
+DataContent(value, identification, line_number) = DataContent(value, false, identification, line_number)
+ElementEnd(name, identification, line_number) = ElementEnd(false, name, identification, line_number) 
+ElementStart(name, attributes, identification, line_number) = ElementStart(false, name, attributes, identification, line_number)
+is_eoi(tokens) = !isopen(tokens)
 
 
 function cdata_marked_section(mdo, tokens, channel)
@@ -176,7 +158,7 @@ function cdata_marked_section(mdo, tokens, channel)
 
                         else
                             put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(mdo)...))
-                            put!(channel, MarkupError("ERROR: Expecting '>' to end a CDATA marked section.", [ msc ],
+                            put!(channel, MarkupError("ERROR: Expecting '>' to end a CDATA marked section.", [ ],
                                                       Lexical.location_of(msc)...))
                             put!(channel, CDATAMarkedSectionEnd(true, Lexical.location_of(msc)...))
                             break
@@ -344,8 +326,7 @@ function element_end(tokens, channel)
             put!(channel, ElementEnd(name.value, Lexical.location_of(name)...))
 
         else
-            put!(channel, MarkupError("ERROR: Expecting '>' to end an element close tag.", [ etago ],
-                                      Lexical.location_of(name)...))
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an element close tag.", [ ], Lexical.location_of(name)...))
             put!(channel, ElementEnd(true, name.value, Lexical.location_of(name)...))
         end
 
@@ -375,8 +356,7 @@ function element_start(tokens, channel)
 
             else
                 put!(channel, ElementStart(true, name.value, attributes, Lexical.location_of(name)...))
-                put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ stago ],
-                                          Lexical.location_of(name)...))
+                put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ ], Lexical.location_of(name)...))
                 put!(channel, ElementEnd(true, name.value, Lexical.location_of(name)...))
             end
 
@@ -386,8 +366,7 @@ function element_start(tokens, channel)
 
         else
             put!(channel, ElementStart(true, name.value, attributes, Lexical.location_of(name)...))
-            put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ stago ],
-                                      Lexical.location_of(name)...))
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ ], Lexical.location_of(name)...))
         end
 
     else
@@ -429,11 +408,6 @@ function events(state::Lexical.State)
     end
 
     return Channel(eventified; csize = 1)
-end
-
-
-function is_eoi(tokens)
-    return !isopen(tokens)
 end
 
 
@@ -507,10 +481,8 @@ function processing_instruction(tokens, channel)
                     break
 
                 elseif is_eoi(tokens)
-                    t = vcat(pio, consumed)
-
-                    put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", t,
-                                              Lexical.location_of(t[end])...))
+                    put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", 
+                                              vcat(pio, target, consumed), Lexical.location_of(consume[end])...))
                     break
 
                 else
@@ -524,7 +496,7 @@ function processing_instruction(tokens, channel)
             put!(channel, ProcessingInstruction(target.value, "", Lexical.location_of(pio)...))
 
         else
-            put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", [ target ] ,
+            put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", [ pio, target ] ,
                                       Lexical.location_of(target)...))
         end
 
@@ -548,11 +520,11 @@ function character_reference(tokens)
             return CharacterReference(value.value, Lexical.location_of(cro)...)
 
         else
-            return MarkupError("ERROR: Expecting ';' to end a character reference.", [ ero, value ], Lexical.location_of(name)...)
+            return MarkupError("ERROR: Expecting ';' to end a character reference.", [ cro, value ], Lexical.location_of(name)...)
         end
 
     else
-        return MarkupError("ERROR: Expecting a character value.", [ ero ], Lexical.location_of(ero)...)
+        return MarkupError("ERROR: Expecting a character value.", [ cro ], Lexical.location_of(cro)...)
     end
 end
 
