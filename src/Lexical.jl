@@ -110,23 +110,16 @@ const OneCharacterTokens = Dict('>'  => mdc, # Again, this will never show up ..
                                 '>'  => tagc,
                                 '/'  => net,
                                 '='  => vi)
-
 const TokenStarts = Set([ '\"', '#', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '/', ';', '<', '=', '>', '?', '[', ']', '|' ])
-
 const WhiteSpaces = Set([ '\u20', '\u09', '\u0a', '\u0d' ])
 
 # ----------------------------------------
 # FUNCTIONS
 # ----------------------------------------
 
-function State(io)
-    return State(io, -1, nothing, -1)
-end
-
-
-function Token(token_type::TokenType, token_value::String, state::State)
-    return Token(token_type, token_value, identification_of(state)...)
-end
+State(io) = State(io, -1, nothing, -1)
+Token(token_type::TokenType, token_value::String, state::State) = Token(token_type, token_value, identification_of(state)...)
+location_of(token::Token) = ( token.identification, token.line_number )
 
 
 function consume_last_match(state::State)
@@ -173,15 +166,8 @@ end
 
 
 function identification_of(state::State)
-    function name_of(io::IOStream)
-        return io.name
-    end
-
-
-    function name_of(io)
-        return "a buffer"
-    end
-
+    name_of(io::IOStream) = io.name
+    name_of(io) = "a buffer"
 
     return ( name_of(state.io), -1 )
 end
@@ -286,37 +272,31 @@ function is_white_space(state::State)::Bool
 end
 
 
-function location_of(token::Token)
-    return ( token.identification, token.line_number )
-end
-
-
-function next(state::State)::Union{Token, Nothing}
-    if is_delimiter_two(state)
-        token_value = consume_last_match(state)
-
-        return Token(TwoCharacterTokens[token_value], String(token_value), state)
-
-    elseif is_delimiter_one(state)
-        token_value = consume_last_match(state)
-
-        return Token(OneCharacterTokens[token_value[1]], String(token_value), state)
-
-    elseif is_text(state)
-        return Token(text, String(consume_last_match(state)), state)
-
-    elseif is_white_space(state)
-        return Token(ws, String(consume_last_match(state)), state)
-
-    else
-        # I should probably throw an error here.
-        #
-        return nothing
-    end
-end
-
-
 function tokens(state::State)
+    function next(state::State)::Union{Token, Nothing}
+        if is_delimiter_two(state)
+            token_value = consume_last_match(state)
+
+            return Token(TwoCharacterTokens[token_value], String(token_value), state)
+
+        elseif is_delimiter_one(state)
+            token_value = consume_last_match(state)
+
+            return Token(OneCharacterTokens[token_value[1]], String(token_value), state)
+
+        elseif is_text(state)
+            return Token(text, String(consume_last_match(state)), state)
+
+        elseif is_white_space(state)
+            return Token(ws, String(consume_last_match(state)), state)
+
+        else
+            # I should probably throw an error here.
+            #
+            return nothing
+        end
+    end
+
     function tokenized(channel::Channel)
         while true
             token = next(state)
