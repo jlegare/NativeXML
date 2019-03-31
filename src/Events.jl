@@ -130,6 +130,16 @@ ElementStart(name, attributes, identification, line_number) = ElementStart(false
 is_eoi(tokens) = !isopen(tokens)
 
 
+# This is needed for writing tests, because MarkupError contains other structs inside an array.
+#
+function Base.:(==)(left::MarkupError, right::MarkupError)
+    return (left.message           == right.message
+            && left.discarded      == right.discarded
+            && left.identification == right.identification
+            && left.line_number    == right.line_number)
+end
+
+
 function cdata_marked_section(mdo, tokens, channel)
     dso = take!(tokens)
 
@@ -520,7 +530,7 @@ function character_reference(tokens)
             return CharacterReference(value.value, Lexical.location_of(cro)...)
 
         else
-            return MarkupError("ERROR: Expecting ';' to end a character reference.", [ cro, value ], Lexical.location_of(name)...)
+            return MarkupError("ERROR: Expecting ';' to end a character reference.", [ cro, value ], Lexical.location_of(value)...)
         end
 
     else
