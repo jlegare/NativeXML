@@ -127,7 +127,7 @@ CDATAMarkedSectionEnd(identification, line_number) = CDATAMarkedSectionEnd(false
 DataContent(value, identification, line_number) = DataContent(value, false, identification, line_number)
 ElementEnd(name, identification, line_number) = ElementEnd(false, name, identification, line_number) 
 ElementStart(name, attributes, identification, line_number) = ElementStart(false, name, attributes, identification, line_number)
-is_eoi(tokens) = !isopen(tokens)
+is_eoi(tokens) = !isopen(tokens) & !isready(tokens)
 
 
 # This is needed for writing tests, because MarkupError contains other structs inside an array.
@@ -491,8 +491,9 @@ function processing_instruction(tokens, channel)
                     break
 
                 elseif is_eoi(tokens)
+                    t = vcat(pio, target, consumed)
                     put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", 
-                                              vcat(pio, target, consumed), Lexical.location_of(consume[end])...))
+                                              t, Lexical.location_of(t[end])...))
                     break
 
                 else

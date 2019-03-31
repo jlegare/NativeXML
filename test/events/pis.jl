@@ -56,4 +56,33 @@
         @test (first(events) == E.MarkupError("ERROR: Expecting a PI target.",
                                               [ L.Token(L.pio, "<?", "a buffer", -1) ], "a buffer", -1))
     end
+
+    @testset "Events/Processing Instructions (Negative ... no terminator)" begin
+        # Check that EOI is caught.
+        #
+        @test (collect(E.events(L.State(IOBuffer("<?target"))))
+               == [ E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.", 
+                                  [ L.Token(L.pio, "<?", "a buffer", -1), 
+                                    L.Token(L.text, "target", "a buffer", -1) ], "a buffer", -1) ])
+        @test (collect(E.events(L.State(IOBuffer("<?target value"))))
+               == [ E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.", 
+                                  [ L.Token(L.pio, "<?", "a buffer", -1), 
+                                    L.Token(L.text, "target", "a buffer", -1), 
+                                    L.Token(L.text, "value", "a buffer", -1) ], "a buffer", -1) ])
+        @test (collect(E.events(L.State(IOBuffer("<?target value "))))
+               == [ E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.", 
+                                  [ L.Token(L.pio, "<?", "a buffer", -1), 
+                                    L.Token(L.text, "target", "a buffer", -1), 
+                                    L.Token(L.text, "value", "a buffer", -1), 
+                                    L.Token(L.ws, " ", "a buffer", -1) ], "a buffer", -1) ])
+
+        # Check that a random token is caught. But careful ... the parser keeps going, so we only check the FIRST
+        # event. (Otherwise we're testing the results of some other part of the parser.)
+        #
+        events = collect(E.events(L.State(IOBuffer("<?target<"))))
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
+                                              [ L.Token(L.pio, "<?", "a buffer", -1), 
+                                                L.Token(L.text, "target", "a buffer", -1) ], "a buffer", -1))
+    end
 end
