@@ -114,4 +114,59 @@
                                               [ L.Token(L.ero, "&", "a buffer", -1),
                                                 L.Token(L.text, "a", "a buffer", -1) ], "a buffer", -1))
     end
+
+    @testset "Events/Parameter Entity References (Positive)" begin
+        @test collect(E.events(L.State(IOBuffer("%a;")))) == [ E.EntityReferenceParameter("a", "a buffer", -1) ]
+        @test collect(E.events(L.State(IOBuffer("%é;")))) == [ E.EntityReferenceParameter("é", "a buffer", -1) ]
+
+        @test collect(E.events(L.State(IOBuffer("%aé;")))) == [ E.EntityReferenceParameter("aé", "a buffer", -1) ]
+        @test collect(E.events(L.State(IOBuffer("%éa;")))) == [ E.EntityReferenceParameter("éa", "a buffer", -1) ]
+
+        @test collect(E.events(L.State(IOBuffer("%a;%é;")))) == [ E.EntityReferenceParameter("a", "a buffer", -1), 
+                                                                  E.EntityReferenceParameter("é", "a buffer", -1) ]
+
+        @test collect(E.events(L.State(IOBuffer("%é;%a;")))) == [ E.EntityReferenceParameter("é", "a buffer", -1), 
+                                                                  E.EntityReferenceParameter("a", "a buffer", -1) ]
+    end
+
+    @testset "Events/Parameter Entity References (Negative ... no entity name)" begin
+        # Check that a missing entity name is caught.
+        #
+        @test (collect(E.events(L.State(IOBuffer("%;"))))
+               == [ E.MarkupError("ERROR: Expecting a parameter entity name.",
+                                  [ L.Token(L.pero, "%", "a buffer", -1) ], "a buffer", -1) ])
+
+
+        # Check that EOI is caught.
+        #
+        @test (collect(E.events(L.State(IOBuffer("%"))))
+               == [ E.MarkupError("ERROR: Expecting a parameter entity name.",
+                                  [ L.Token(L.pero, "%", "a buffer", -1) ], "a buffer", -1) ])
+
+        # Check that a random token is caught. But careful ... the parser keeps going, so we only check the FIRST
+        # event. (Otherwise we're testing the results of some other part of the parser.)
+        #
+        events = collect(E.events(L.State(IOBuffer("%<"))))
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a parameter entity name.",
+                                              [ L.Token(L.pero, "%", "a buffer", -1) ], "a buffer", -1))
+    end
+
+    @testset "Events/Parameter Entity References (Negative ... no terminator)" begin
+        # Check that EOI is caught.
+        #
+        @test (collect(E.events(L.State(IOBuffer("%a"))))
+               == [ E.MarkupError("ERROR: Expecting ';' to end a parameter entity reference.",
+                                  [ L.Token(L.pero, "%", "a buffer", -1),
+                                    L.Token(L.text, "a", "a buffer", -1) ], "a buffer", -1) ])
+
+        # Check that a random token is caught. But careful ... the parser keeps going, so we only check the FIRST
+        # event. (Otherwise we're testing the results of some other part of the parser.)
+        #
+        events = collect(E.events(L.State(IOBuffer("%a<"))))
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting ';' to end a parameter entity reference.",
+                                              [ L.Token(L.pero, "%", "a buffer", -1),
+                                                L.Token(L.text, "a", "a buffer", -1) ], "a buffer", -1))
+    end
 end
