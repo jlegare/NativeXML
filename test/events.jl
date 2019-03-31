@@ -59,4 +59,18 @@
                                               [ L.Token(L.cro, "&#", "a buffer", -1),
                                                 L.Token(L.text, "10", "a buffer", -1) ], "a buffer", -1))
     end
+
+    @testset "Events/General Entity References (Positive)" begin
+        @test collect(E.events(L.State(IOBuffer("&a;")))) == [ E.EntityReferenceGeneral("a", "a buffer", -1) ]
+        @test collect(E.events(L.State(IOBuffer("&é;")))) == [ E.EntityReferenceGeneral("é", "a buffer", -1) ]
+
+        @test collect(E.events(L.State(IOBuffer("&aé;")))) == [ E.EntityReferenceGeneral("aé", "a buffer", -1) ]
+        @test collect(E.events(L.State(IOBuffer("&éa;")))) == [ E.EntityReferenceGeneral("éa", "a buffer", -1) ]
+
+        @test collect(E.events(L.State(IOBuffer("&a;&é;")))) == [ E.EntityReferenceGeneral("a", "a buffer", -1), 
+                                                                  E.EntityReferenceGeneral("é", "a buffer", -1) ]
+
+        @test collect(E.events(L.State(IOBuffer("&é;&a;")))) == [ E.EntityReferenceGeneral("é", "a buffer", -1), 
+                                                                  E.EntityReferenceGeneral("a", "a buffer", -1) ]
+    end
 end
