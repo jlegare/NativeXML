@@ -1,12 +1,8 @@
-@testset "Events" begin
+@testset "Events/Entities" begin
     E = Events
     L = Events.Lexical
 
-    @testset "Events/Empty String" begin
-        @test collect(E.events(L.State(IOBuffer("")))) == [ ]
-    end
-
-    @testset "Events/Character References (Positive)" begin
+    @testset "Events/Entities/Character References (Positive)" begin
         @test collect(E.events(L.State(IOBuffer("&#10;")))) == [ E.CharacterReference("10", "a buffer", -1) ]
         @test collect(E.events(L.State(IOBuffer("&#xa;")))) == [ E.CharacterReference("xa", "a buffer", -1) ]
 
@@ -20,7 +16,7 @@
         @test collect(E.events(L.State(IOBuffer("&#xxx;")))) == [ E.CharacterReference("xxx", "a buffer", -1) ]
     end
 
-    @testset "Events/Character References (Negative ... no character specification)" begin
+    @testset "Events/Entities/Character References (Negative ... no character specification)" begin
         # Check that a missing character specification is caught.
         #
         @test (collect(E.events(L.State(IOBuffer("&#;"))))
@@ -42,7 +38,7 @@
                                               [ L.Token(L.cro, "&#", "a buffer", -1) ], "a buffer", -1))
     end
 
-    @testset "Events/Character References (Negative ... no terminator)" begin
+    @testset "Events/Entities/Character References (Negative ... no terminator)" begin
         # Check that EOI is caught.
         #
         @test (collect(E.events(L.State(IOBuffer("&#10"))))
@@ -60,7 +56,7 @@
                                                 L.Token(L.text, "10", "a buffer", -1) ], "a buffer", -1))
     end
 
-    @testset "Events/General Entity References (Positive)" begin
+    @testset "Events/Entities/General Entity References (Positive)" begin
         @test collect(E.events(L.State(IOBuffer("&a;")))) == [ E.EntityReferenceGeneral("a", "a buffer", -1) ]
         @test collect(E.events(L.State(IOBuffer("&é;")))) == [ E.EntityReferenceGeneral("é", "a buffer", -1) ]
 
@@ -74,7 +70,7 @@
                                                                   E.EntityReferenceGeneral("a", "a buffer", -1) ]
     end
 
-    @testset "Events/General Entity References (Negative ... no entity name)" begin
+    @testset "Events/Entities/General Entity References (Negative ... no entity name)" begin
         # Check that a missing entity name is caught.
         #
         @test (collect(E.events(L.State(IOBuffer("&;"))))
@@ -97,7 +93,7 @@
                                               [ L.Token(L.ero, "&", "a buffer", -1) ], "a buffer", -1))
     end
 
-    @testset "Events/General Entity References (Negative ... no terminator)" begin
+    @testset "Events/Entities/General Entity References (Negative ... no terminator)" begin
         # Check that EOI is caught.
         #
         @test (collect(E.events(L.State(IOBuffer("&a"))))
@@ -115,7 +111,7 @@
                                                 L.Token(L.text, "a", "a buffer", -1) ], "a buffer", -1))
     end
 
-    @testset "Events/Parameter Entity References (Positive)" begin
+    @testset "Events/Entities/Parameter Entity References (Positive)" begin
         @test collect(E.events(L.State(IOBuffer("%a;")))) == [ E.EntityReferenceParameter("a", "a buffer", -1) ]
         @test collect(E.events(L.State(IOBuffer("%é;")))) == [ E.EntityReferenceParameter("é", "a buffer", -1) ]
 
@@ -129,7 +125,7 @@
                                                                   E.EntityReferenceParameter("a", "a buffer", -1) ]
     end
 
-    @testset "Events/Parameter Entity References (Negative ... no entity name)" begin
+    @testset "Events/Entities/Parameter Entity References (Negative ... no entity name)" begin
         # Check that a missing entity name is caught.
         #
         @test (collect(E.events(L.State(IOBuffer("%;"))))
@@ -152,7 +148,7 @@
                                               [ L.Token(L.pero, "%", "a buffer", -1) ], "a buffer", -1))
     end
 
-    @testset "Events/Parameter Entity References (Negative ... no terminator)" begin
+    @testset "Events/Entities/Parameter Entity References (Negative ... no terminator)" begin
         # Check that EOI is caught.
         #
         @test (collect(E.events(L.State(IOBuffer("%a"))))
