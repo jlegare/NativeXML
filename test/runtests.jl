@@ -4,7 +4,7 @@ using Test
 using NativeXML.Lexical
 using NativeXML.Events
 
-tests = [ "lexical", "events", ]
+tests = [ "lexical", "events/entities", ]
 
 for test ∈ tests
     include("$test.jl")
