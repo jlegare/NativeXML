@@ -73,4 +73,45 @@
         @test collect(E.events(L.State(IOBuffer("&é;&a;")))) == [ E.EntityReferenceGeneral("é", "a buffer", -1), 
                                                                   E.EntityReferenceGeneral("a", "a buffer", -1) ]
     end
+
+    @testset "Events/General Entity References (Negative ... no entity name)" begin
+        # Check that a missing entity name is caught.
+        #
+        @test (collect(E.events(L.State(IOBuffer("&;"))))
+               == [ E.MarkupError("ERROR: Expecting an entity name.",
+                                  [ L.Token(L.ero, "&", "a buffer", -1) ], "a buffer", -1) ])
+
+
+        # Check that EOI is caught.
+        #
+        @test (collect(E.events(L.State(IOBuffer("&"))))
+               == [ E.MarkupError("ERROR: Expecting an entity name.",
+                                  [ L.Token(L.ero, "&", "a buffer", -1) ], "a buffer", -1) ])
+
+        # Check that a random token is caught. But careful ... the parser keeps going, so we only check the FIRST
+        # event. (Otherwise we're testing the results of some other part of the parser.)
+        #
+        events = collect(E.events(L.State(IOBuffer("&<"))))
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting an entity name.",
+                                              [ L.Token(L.ero, "&", "a buffer", -1) ], "a buffer", -1))
+    end
+
+    @testset "Events/General Entity References (Negative ... no terminator)" begin
+        # Check that EOI is caught.
+        #
+        @test (collect(E.events(L.State(IOBuffer("&a"))))
+               == [ E.MarkupError("ERROR: Expecting ';' to end an entity reference.",
+                                  [ L.Token(L.ero, "&", "a buffer", -1),
+                                    L.Token(L.text, "a", "a buffer", -1) ], "a buffer", -1) ])
+
+        # Check that a random token is caught. But careful ... the parser keeps going, so we only check the FIRST
+        # event. (Otherwise we're testing the results of some other part of the parser.)
+        #
+        events = collect(E.events(L.State(IOBuffer("&a<"))))
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting ';' to end an entity reference.",
+                                              [ L.Token(L.ero, "&", "a buffer", -1),
+                                                L.Token(L.text, "a", "a buffer", -1) ], "a buffer", -1))
+    end
 end
