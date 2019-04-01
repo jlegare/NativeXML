@@ -9,6 +9,8 @@
         @test collect(E.events(L.State(IOBuffer("<?x?><?y?>")))) == [ E.ProcessingInstruction("x", "", "a buffer", -1),
                                                                       E.ProcessingInstruction("y", "", "a buffer", -1) ]
 
+        @test collect(E.events(L.State(IOBuffer("<?é?>")))) == [ E.ProcessingInstruction("é", "", "a buffer", -1) ]
+
         # The specification allows for trailing white space after the PI target, but it's considered pure syntax by the
         # parser, so make sure it doesn't appear in the generated event. Try various types and numbers of white space.
         #
@@ -29,6 +31,9 @@
                == [ E.ProcessingInstruction("target", "value value value", "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<?target value\nvalue\nvalue?>"))))
                == [ E.ProcessingInstruction("target", "value\nvalue\nvalue", "a buffer", -1) ])
+
+        @test (collect(E.events(L.State(IOBuffer("<?target ééé?>"))))
+               == [ E.ProcessingInstruction("target", "ééé", "a buffer", -1) ])
 
         # The PI value is anything following the first white space, including any white space trailing at the end of the
         # PI. Make sure that any trailing white space is captured.
@@ -61,19 +66,19 @@
         # Check that EOI is caught.
         #
         @test (collect(E.events(L.State(IOBuffer("<?target"))))
-               == [ E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.", 
-                                  [ L.Token(L.pio, "<?", "a buffer", -1), 
+               == [ E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
+                                  [ L.Token(L.pio, "<?", "a buffer", -1),
                                     L.Token(L.text, "target", "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<?target value"))))
-               == [ E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.", 
-                                  [ L.Token(L.pio, "<?", "a buffer", -1), 
-                                    L.Token(L.text, "target", "a buffer", -1), 
+               == [ E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
+                                  [ L.Token(L.pio, "<?", "a buffer", -1),
+                                    L.Token(L.text, "target", "a buffer", -1),
                                     L.Token(L.text, "value", "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<?target value "))))
-               == [ E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.", 
-                                  [ L.Token(L.pio, "<?", "a buffer", -1), 
-                                    L.Token(L.text, "target", "a buffer", -1), 
-                                    L.Token(L.text, "value", "a buffer", -1), 
+               == [ E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
+                                  [ L.Token(L.pio, "<?", "a buffer", -1),
+                                    L.Token(L.text, "target", "a buffer", -1),
+                                    L.Token(L.text, "value", "a buffer", -1),
                                     L.Token(L.ws, " ", "a buffer", -1) ], "a buffer", -1) ])
 
         # Check that a random token is caught. But careful ... the parser keeps going, so we only check the FIRST
@@ -82,7 +87,10 @@
         events = collect(E.events(L.State(IOBuffer("<?target<"))))
         @test length(events) > 1
         @test (first(events) == E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
-                                              [ L.Token(L.pio, "<?", "a buffer", -1), 
+                                              [ L.Token(L.pio, "<?", "a buffer", -1),
                                                 L.Token(L.text, "target", "a buffer", -1) ], "a buffer", -1))
+
+        # We can't write an equivalent test with a PI value, because anything that appears after the first white space
+        # (except '?>') belongs in the PI value.
     end
 end
