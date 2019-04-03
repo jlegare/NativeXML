@@ -124,9 +124,13 @@ end
 
 CommentEnd(identification, line_number) = CommentEnd(false, identification, line_number)
 CDATAMarkedSectionEnd(identification, line_number) = CDATAMarkedSectionEnd(false, identification, line_number)
-DataContent(value, identification, line_number) = DataContent(value, false, identification, line_number)
 ElementEnd(name, identification, line_number) = ElementEnd(false, name, identification, line_number) 
 ElementStart(name, attributes, identification, line_number) = ElementStart(false, name, attributes, identification, line_number)
+
+DataContent(tokens::Array, identification, line_number) = DataContent(join(map(token -> token.value, tokens), ""), 
+                                                                      identification, line_number)
+DataContent(value, identification, line_number) = DataContent(value, false, identification, line_number)
+
 is_eoi(tokens) = !isopen(tokens) & !isready(tokens)
 
 
@@ -162,12 +166,12 @@ function cdata_marked_section(mdo, tokens, channel)
 
                         if is_token(Lexical.tagc, tokens)
                             take!(tokens)
-                            put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(mdo)...))
+                            put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]...))
                             put!(channel, CDATAMarkedSectionEnd(Lexical.location_of(msc)...))
                             break
 
                         else
-                            put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(mdo)...))
+                            put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]...))
                             put!(channel, MarkupError("ERROR: Expecting '>' to end a CDATA marked section.", [ ],
                                                       Lexical.location_of(msc)...))
                             put!(channel, CDATAMarkedSectionEnd(true, Lexical.location_of(msc)...))
@@ -175,10 +179,10 @@ function cdata_marked_section(mdo, tokens, channel)
                         end
 
                     elseif is_eoi(tokens)
-                        put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(mdo)...))
+                        put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]...))
                         put!(channel, MarkupError("ERROR: Expecting ']]>' to end a CDATA marked section.", [ ],
                                                   Lexical.location_of(consumed[end])...))
-                        put!(channel, CDATAMarkedSectionEnd(true, Lexical.location_of(consumed[end])...))
+                        put!(channel, CDATAMarkedSectionEnd(true, locations_of(mdo, consumed)[:tail]...))
                         break
 
                     else
@@ -279,25 +283,6 @@ end
 
 
 function comment(mdo, tokens, channel)
-    function locations_of(com, consumed)
-        if length(consumed) > 0
-            head = Lexical.location_of(consumed[1])
-
-        else
-            head = Lexical.location_of(com)
-        end
-
-        if length(consumed) > 0
-            tail = Lexical.location_of(consumed[end])
-
-        else
-            tail = Lexical.location_of(com)
-        end
-
-        return ( head = head, tail = tail )
-    end
-
-
     com = take!(tokens)
 
     consumed = Array{Lexical.Token, 1}()
@@ -310,18 +295,18 @@ function comment(mdo, tokens, channel)
 
             if is_token(Lexical.tagc, tokens)
                 take!(tokens)
-                put!(channel, DataContent(join(map(value -> value.value, consumed), ""), locations_of(com, consumed)[:head]...))
+                put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]...))
                 put!(channel, CommentEnd(Lexical.location_of(com)...))
                 break
 
             elseif is_eoi(tokens)
-                put!(channel, DataContent(join(map(value -> value.value, consumed), ""), locations_of(com, consumed)[:head]...))
+                put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]...))
                 put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], locations_of(com, consumed)[:tail]...))
                 put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]...))
                 break
 
             else
-                put!(channel, DataContent(join(map(value -> value.value, consumed), ""), locations_of(com, consumed)[:head]...))
+                put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]...))
                 put!(channel, MarkupError("ERROR: '--' is not allowed inside a comment.", [ ],
                                           locations_of(com, consumed)[:tail]...))
                 put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]...))
@@ -329,7 +314,7 @@ function comment(mdo, tokens, channel)
             end
 
         elseif is_eoi(tokens)
-            put!(channel, DataContent(join(map(value -> value.value, consumed), ""), locations_of(com, consumed)[:head]...))
+            put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]...))
             put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], locations_of(com, consumed)[:tail]...))
             put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]...))
             break
@@ -451,6 +436,25 @@ function is_token(token_type, tokens)
     else
         return false
     end
+end
+
+
+function locations_of(leader, consumed)
+    if length(consumed) > 0
+        head = Lexical.location_of(consumed[1])
+
+    else
+        head = Lexical.location_of(leader)
+    end
+
+    if length(consumed) > 0
+        tail = Lexical.location_of(consumed[end])
+
+    else
+        tail = Lexical.location_of(leader)
+    end
+
+    return ( head = head, tail = tail )
 end
 
 
