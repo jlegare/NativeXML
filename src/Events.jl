@@ -279,6 +279,25 @@ end
 
 
 function comment(mdo, tokens, channel)
+    function locations_of(com, consumed)
+        if length(consumed) > 0
+            head = Lexical.location_of(consumed[1])
+
+        else
+            head = Lexical.location_of(com)
+        end
+
+        if length(consumed) > 0
+            tail = Lexical.location_of(consumed[end])
+
+        else
+            tail = Lexical.location_of(com)
+        end
+
+        return ( head = head, tail = tail )
+    end
+
+
     com = take!(tokens)
 
     consumed = Array{Lexical.Token, 1}()
@@ -291,28 +310,28 @@ function comment(mdo, tokens, channel)
 
             if is_token(Lexical.tagc, tokens)
                 take!(tokens)
-                put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(consumed[1])...))
-                put!(channel, CommentEnd(Lexical.location_of(mdo)...))
+                put!(channel, DataContent(join(map(value -> value.value, consumed), ""), locations_of(com, consumed)[:head]...))
+                put!(channel, CommentEnd(Lexical.location_of(com)...))
                 break
 
             elseif is_eoi(tokens)
-                put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(consumed[1])...))
-                put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], Lexical.location_of(consumed[end])...))
-                put!(channel, CommentEnd(true, Lexical.location_of(consumed[end])...))
+                put!(channel, DataContent(join(map(value -> value.value, consumed), ""), locations_of(com, consumed)[:head]...))
+                put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], locations_of(com, consumed)[:tail]...))
+                put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]...))
                 break
 
             else
-                put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(consumed[1])...))
+                put!(channel, DataContent(join(map(value -> value.value, consumed), ""), locations_of(com, consumed)[:head]...))
                 put!(channel, MarkupError("ERROR: '--' is not allowed inside a comment.", [ ],
-                                          Lexical.location_of(consumed[end])...))
-                put!(channel, CommentEnd(true, Lexical.location_of(consumed[end])...))
+                                          locations_of(com, consumed)[:tail]...))
+                put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]...))
                 break
             end
 
         elseif is_eoi(tokens)
-            put!(channel, DataContent(join(map(value -> value.value, consumed), ""), Lexical.location_of(consumed[1])...))
-            put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], Lexical.location_of(consumed[end])...))
-            put!(channel, CommentEnd(true, Lexical.location_of(consumed[end])...))
+            put!(channel, DataContent(join(map(value -> value.value, consumed), ""), locations_of(com, consumed)[:head]...))
+            put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], locations_of(com, consumed)[:tail]...))
+            put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]...))
             break
 
         else
@@ -412,6 +431,8 @@ function events(state::Lexical.State)
                 element_end(tokens, channel)
 
             else
+                # This isn't right ... unmatched tokens should be gobbled up in a MarkupError().
+                #
                 break
             end
         end
