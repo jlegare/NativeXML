@@ -181,7 +181,7 @@ function cdata_marked_section(mdo, tokens, channel)
                     elseif is_eoi(tokens)
                         put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]...))
                         put!(channel, MarkupError("ERROR: Expecting ']]>' to end a CDATA marked section.", [ ],
-                                                  Lexical.location_of(consumed[end])...))
+                                                  locations_of(mdo, consumed)[:tail]...))
                         put!(channel, CDATAMarkedSectionEnd(true, locations_of(mdo, consumed)[:tail]...))
                         break
 
