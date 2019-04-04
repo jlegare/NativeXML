@@ -416,7 +416,7 @@ function events(state::Lexical.State)
                 element_end(tokens, channel)
 
             else
-                # This isn't right ... unmatched tokens should be gobbled up in a MarkupError().
+                # This isn't right ... unmatched tokens should be gobbled up in a DataContent().
                 #
                 break
             end
