@@ -31,6 +31,15 @@
                == [ E.CommentStart("a buffer", -1),
                     E.DataContent(" declarations for <head> & <body> ", "a buffer", -1),
                     E.CommentEnd("a buffer", -1) ])
+
+        @test (collect(E.events(L.State(IOBuffer("<!-- &e; -->"))))
+               == [ E.CommentStart("a buffer", -1),
+                    E.DataContent(" &e; ", "a buffer", -1),
+                    E.CommentEnd("a buffer", -1) ])
+        @test (collect(E.events(L.State(IOBuffer("<!-- <?target value?> -->"))))
+               == [ E.CommentStart("a buffer", -1),
+                    E.DataContent(" <?target value?> ", "a buffer", -1),
+                    E.CommentEnd("a buffer", -1) ])
     end
 
     @testset "Events/Comments (Negative ... no terminator)" begin
