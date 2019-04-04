@@ -143,6 +143,16 @@ function Base.:(==)(left::MarkupError, right::MarkupError)
             && left.line_number    == right.line_number)
 end
 
+# Same reason as above, for the attributes.
+
+function Base.:(==)(left::ElementStart, right::ElementStart)
+    return (left.is_recovery       == right.is_recovery
+            && left.name           == right.name
+            && left.attributes     == right.attributes
+            && left.identification == right.identification
+            && left.line_number    == right.line_number)
+end
+
 
 function cdata_marked_section(mdo, tokens, channel)
     dso = take!(tokens)
