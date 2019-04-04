@@ -72,12 +72,17 @@
                == [ E.CommentStart("a buffer", -1),
                     E.DataContent(" ", "a buffer", -1),
                     E.MarkupError("ERROR: '--' is not allowed inside a comment.", [ ], "a buffer", -1),
-                    E.CommentEnd(true, "a buffer", -1) ])
+                    E.CommentEnd(true, "a buffer", -1),
+                    E.DataContent(" ", true, "a buffer", -1), 
+                    E.DataContent("--", false, "a buffer", -1), 
+                    E.DataContent(">", false, "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<!------>")))) 
                == [ E.CommentStart("a buffer", -1),
                     E.DataContent("", "a buffer", -1),
                     E.MarkupError("ERROR: '--' is not allowed inside a comment.", [ ], "a buffer", -1),
-                    E.CommentEnd(true, "a buffer", -1) ])
+                    E.CommentEnd(true, "a buffer", -1), 
+                    E.DataContent("--", false, "a buffer", -1), 
+                    E.DataContent(">", false, "a buffer", -1) ])
 
         # This is from the XML specification, § 2.5.
         #
@@ -85,6 +90,8 @@
                == [ E.CommentStart("a buffer", -1),
                     E.DataContent(" B+, B, or B", "a buffer", -1),
                     E.MarkupError("ERROR: '--' is not allowed inside a comment.", [ ], "a buffer", -1),
-                    E.CommentEnd(true, "a buffer", -1) ])
+                    E.CommentEnd(true, "a buffer", -1), 
+                    E.DataContent("-", false, "a buffer", -1), 
+                    E.DataContent(">", false, "a buffer", -1) ])
     end
 end

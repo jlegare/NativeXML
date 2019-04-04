@@ -46,7 +46,8 @@
         # Check that a missing PI target is caught.
         #
         @test (collect(E.events(L.State(IOBuffer("<??>"))))
-               == [ E.MarkupError("ERROR: Expecting a PI target.", [ L.Token(L.pio, "<?", "a buffer", -1) ], "a buffer", -1) ])
+               == [ E.MarkupError("ERROR: Expecting a PI target.", [ L.Token(L.pio, "<?", "a buffer", -1) ], "a buffer", -1),
+                    E.DataContent("?>", false, "a buffer", -1) ])
 
         # Check that EOI is caught.
         #

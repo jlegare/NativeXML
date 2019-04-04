@@ -415,10 +415,18 @@ function events(state::Lexical.State)
             elseif is_token(Lexical.etago, tokens)
                 element_end(tokens, channel)
 
-            else
-                # This isn't right ... unmatched tokens should be gobbled up in a DataContent().
-                #
+            elseif is_eoi(tokens)
                 break
+
+            else
+                if is_token(Lexical.ws, tokens)
+                    ws = take!(tokens)
+                    push!(channel, DataContent(ws.value, true, Lexical.location_of(ws)...))
+
+                else
+                    token = take!(tokens)
+                    push!(channel, DataContent(token.value, Lexical.location_of(token)...))
+                end
             end
         end
     end

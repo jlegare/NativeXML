@@ -21,7 +21,8 @@
         #
         @test (collect(E.events(L.State(IOBuffer("&#;"))))
                == [ E.MarkupError("ERROR: Expecting a character value.",
-                                  [ L.Token(L.cro, "&#", "a buffer", -1) ], "a buffer", -1) ])
+                                  [ L.Token(L.cro, "&#", "a buffer", -1) ], "a buffer", -1),
+                    E.DataContent(";", false, "a buffer", -1) ])
 
         # Check that EOI is caught.
         #
@@ -75,7 +76,8 @@
         #
         @test (collect(E.events(L.State(IOBuffer("&;"))))
                == [ E.MarkupError("ERROR: Expecting an entity name.",
-                                  [ L.Token(L.ero, "&", "a buffer", -1) ], "a buffer", -1) ])
+                                  [ L.Token(L.ero, "&", "a buffer", -1) ], "a buffer", -1),
+                    E.DataContent(";", false, "a buffer", -1) ])
 
 
         # Check that EOI is caught.
@@ -130,7 +132,8 @@
         #
         @test (collect(E.events(L.State(IOBuffer("%;"))))
                == [ E.MarkupError("ERROR: Expecting a parameter entity name.",
-                                  [ L.Token(L.pero, "%", "a buffer", -1) ], "a buffer", -1) ])
+                                  [ L.Token(L.pero, "%", "a buffer", -1) ], "a buffer", -1),
+                    E.DataContent(";", false, "a buffer", -1) ])
 
 
         # Check that EOI is caught.
