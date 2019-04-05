@@ -63,6 +63,15 @@
                               AS("d", [ DC("e", "a buffer", -1) ], "a buffer", -1),
                               AS("f", [ DC("g", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
 
+        # Make sure trailing white space is consumed.
+        #
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"c\" >"))))
+               == [ ES("a", [ AS("b", [ DC("c", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"c\"\n>"))))
+               == [ ES("a", [ AS("b", [ DC("c", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"c\"      >"))))
+               == [ ES("a", [ AS("b", [ DC("c", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
+
         # Check that attribute values can contain allowed special characters. Well, try a few representative cases.
         #
         @test (collect(E.events(L.State(IOBuffer("<a b=\" \">"))))
