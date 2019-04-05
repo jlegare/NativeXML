@@ -137,7 +137,7 @@ DataContent(value, identification, line_number) = DataContent(value, false, iden
 is_eoi(tokens) = !isopen(tokens) & !isready(tokens)
 
 
-# This is needed for writing tests, because MarkupError contains other structs inside an array.
+# These are needed for writing tests, because these types contain other structs inside an array.
 #
 function Base.:(==)(left::MarkupError, right::MarkupError)
     return (left.message           == right.message
@@ -146,12 +146,19 @@ function Base.:(==)(left::MarkupError, right::MarkupError)
             && left.line_number    == right.line_number)
 end
 
-# Same reason as above, for the attributes.
 
 function Base.:(==)(left::ElementStart, right::ElementStart)
     return (left.is_recovery       == right.is_recovery
             && left.name           == right.name
             && left.attributes     == right.attributes
+            && left.identification == right.identification
+            && left.line_number    == right.line_number)
+end
+
+
+function Base.:(==)(left::AttributeSpecification, right::AttributeSpecification)
+    return (left.name              == right.name
+            && left.value          == right.value
             && left.identification == right.identification
             && left.line_number    == right.line_number)
 end
@@ -281,10 +288,13 @@ function collect_attributes(tokens)
     while true
         if is_token(Lexical.ws, tokens)
             take!(tokens)
-        end
 
-        if is_token(Lexical.text, tokens)
-            push!(attributes, collect_attribute(tokens))
+            if is_token(Lexical.text, tokens)
+                push!(attributes, collect_attribute(tokens))
+
+            else
+                break
+            end
 
         else
             break
