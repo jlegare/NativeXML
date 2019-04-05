@@ -102,6 +102,6 @@
                == [ E.ElementStart("a", [ E.AttributeSpecification("b", [ E.DataContent("\"", false, "a buffer", -1),
                                                                           E.DataContent("Hello", false, "a buffer", -1),
                                                                           E.DataContent("\"", false, "a buffer", -1) ],
-                                                              "a buffer", -1) ], "a buffer", -1) ])
+                                                                   "a buffer", -1) ], "a buffer", -1) ])
     end
 end
