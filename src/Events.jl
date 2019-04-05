@@ -112,6 +112,7 @@ end
 
 struct ElementStart
     is_recovery    ::Bool
+    is_empty       ::Bool    
     name           ::String
     attributes     ::Array{AttributeSpecification, 1}
     identification ::String
@@ -126,6 +127,8 @@ CommentEnd(identification, line_number) = CommentEnd(false, identification, line
 CDATAMarkedSectionEnd(identification, line_number) = CDATAMarkedSectionEnd(false, identification, line_number)
 ElementEnd(name, identification, line_number) = ElementEnd(false, name, identification, line_number) 
 ElementStart(name, attributes, identification, line_number) = ElementStart(false, name, attributes, identification, line_number)
+ElementStart(is_empty, name, attributes, identification, line_number) = ElementStart(false, is_empty, name, attributes, 
+                                                                                     identification, line_number)
 
 DataContent(tokens::Array, identification, line_number) = DataContent(join(map(token -> token.value, tokens), ""), 
                                                                       identification, line_number)
@@ -375,11 +378,11 @@ function element_start(tokens, channel)
             take!(tokens)
             if is_token(Lexical.tagc, tokens)
                 take!(tokens)
-                put!(channel, ElementStart(name.value, attributes, Lexical.location_of(name)...))
+                put!(channel, ElementStart(true, name.value, attributes, Lexical.location_of(name)...))
                 put!(channel, ElementEnd(name.value, Lexical.location_of(name)...))
 
             else
-                put!(channel, ElementStart(true, name.value, attributes, Lexical.location_of(name)...))
+                put!(channel, ElementStart(true, true, name.value, attributes, Lexical.location_of(name)...))
                 put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ ], Lexical.location_of(name)...))
                 put!(channel, ElementEnd(true, name.value, Lexical.location_of(name)...))
             end
@@ -389,7 +392,7 @@ function element_start(tokens, channel)
             put!(channel, ElementStart(name.value, attributes, Lexical.location_of(name)...))
 
         else
-            put!(channel, ElementStart(true, name.value, attributes, Lexical.location_of(name)...))
+            put!(channel, ElementStart(true, false, name.value, attributes, Lexical.location_of(name)...))
             put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ ], Lexical.location_of(name)...))
         end
 
