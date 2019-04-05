@@ -2,106 +2,189 @@
     E = Events
     L = Events.Lexical
 
+    AS = E.AttributeSpecification
+    ES = E.ElementStart
+    DC = E.DataContent
+    ME = E.MarkupError
+
     @testset "Events/Attributes (Positive)" begin
         @test (collect(E.events(L.State(IOBuffer("<a b=\"c\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("b", [ E.DataContent("c", "a buffer", -1) ], "a buffer", -1) ],
-                                   "a buffer", -1) ])
+               == [ ES("a", [ AS("b", [ DC("c", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a abc=\"def\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("abc", [ E.DataContent("def", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("abc", [ DC("def", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a é=\"è\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("é", [ E.DataContent("è", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("é", [ DC("è", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a aé=\"aè\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("aé", [ E.DataContent("aè", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("aé", [ DC("aè", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a éb=\"èb\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("éb", [ E.DataContent("èb", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("éb", [ DC("èb", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a aéb=\"aèb\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("aéb", [ E.DataContent("aèb", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("aéb", [ DC("aèb", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
 
         @test (collect(E.events(L.State(IOBuffer("<a b='c'>"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("b", [ E.DataContent("c", "a buffer", -1) ], "a buffer", -1) ],
-                                   "a buffer", -1) ])
+               == [ ES("a", [ AS("b", [ DC("c", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a abc='def'>"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("abc", [ E.DataContent("def", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("abc", [ DC("def", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a é='è'>"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("é", [ E.DataContent("è", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("é", [ DC("è", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a aé='aè'>"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("aé", [ E.DataContent("aè", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("aé", [ DC("aè", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a éb='èb'>"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("éb", [ E.DataContent("èb", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("éb", [ DC("èb", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a aéb='aèb'>"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("aéb", [ E.DataContent("aèb", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("aéb", [ DC("aèb", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
 
         @test (collect(E.events(L.State(IOBuffer("<a b = \"c\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("b", [ E.DataContent("c", "a buffer", -1) ], "a buffer", -1) ],
-                                   "a buffer", -1) ])
+               == [ ES("a", [ AS("b", [ DC("c", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a abc = \"def\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("abc", [ E.DataContent("def", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("abc", [ DC("def", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a é = \"è\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("é", [ E.DataContent("è", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("é", [ DC("è", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a aé = \"aè\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("aé", [ E.DataContent("aè", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("aé", [ DC("aè", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a éb = \"èb\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("éb", [ E.DataContent("èb", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("éb", [ DC("èb", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a aéb = \"aèb\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("aéb", [ E.DataContent("aèb", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("aéb", [ DC("aèb", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
 
         @test (collect(E.events(L.State(IOBuffer("<a b=\"c\" d=\"e\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("b", [ E.DataContent("c", "a buffer", -1) ], "a buffer", -1),
-                                          E.AttributeSpecification("d", [ E.DataContent("e", "a buffer", -1) ], "a buffer", -1) ],
-                                   "a buffer", -1) ])
+               == [ ES("a", [ AS("b", [ DC("c", "a buffer", -1) ], "a buffer", -1),
+                              AS("d", [ DC("e", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
 
         @test (collect(E.events(L.State(IOBuffer("<a b=\"c\" d=\"e\" f=\"g\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("b", [ E.DataContent("c", "a buffer", -1) ], "a buffer", -1),
-                                          E.AttributeSpecification("d", [ E.DataContent("e", "a buffer", -1) ], "a buffer", -1),
-                                          E.AttributeSpecification("f", [ E.DataContent("g", "a buffer", -1) ], "a buffer", -1) ],
-                                   "a buffer", -1) ])
+               == [ ES("a", [ AS("b", [ DC("c", "a buffer", -1) ], "a buffer", -1),
+                              AS("d", [ DC("e", "a buffer", -1) ], "a buffer", -1),
+                              AS("f", [ DC("g", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
 
         # Make sure any white space can be used as a separator.
         #
         @test (collect(E.events(L.State(IOBuffer("<a\tb=\"c\"\nd=\"e\"\rf=\"g\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("b", [ E.DataContent("c", "a buffer", -1) ], "a buffer", -1),
-                                          E.AttributeSpecification("d", [ E.DataContent("e", "a buffer", -1) ], "a buffer", -1),
-                                          E.AttributeSpecification("f", [ E.DataContent("g", "a buffer", -1) ], "a buffer", -1) ],
-                                   "a buffer", -1) ])
+               == [ ES("a", [ AS("b", [ DC("c", "a buffer", -1) ], "a buffer", -1),
+                              AS("d", [ DC("e", "a buffer", -1) ], "a buffer", -1),
+                              AS("f", [ DC("g", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
 
-        # Check that attribute values can contain allowed special characters.
+        # Check that attribute values can contain allowed special characters. Well, try a few representative cases.
         #
         @test (collect(E.events(L.State(IOBuffer("<a b=\" \">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("b", [ E.DataContent(" ", true, "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("b", [ DC(" ", true, "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a b=\"&amp;\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("b", [ E.EntityReferenceGeneral("amp", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("b", [ E.EntityReferenceGeneral("amp", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a b=\"&#20;\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("b", [ E.CharacterReference("20", "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("b", [ E.CharacterReference("20", "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
 
         # Make sure that the "other" quotes can be used inside the attribute value.
         #
         @test (collect(E.events(L.State(IOBuffer("<a b=\"'Hello'\">"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("b", [ E.DataContent("'", false, "a buffer", -1),
-                                                                          E.DataContent("Hello", false, "a buffer", -1),
-                                                                          E.DataContent("'", false, "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("b", [ DC("'", false, "a buffer", -1),
+                                        DC("Hello", false, "a buffer", -1),
+                                        DC("'", false, "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
         @test (collect(E.events(L.State(IOBuffer("<a b='\"Hello\"'>"))))
-               == [ E.ElementStart("a", [ E.AttributeSpecification("b", [ E.DataContent("\"", false, "a buffer", -1),
-                                                                          E.DataContent("Hello", false, "a buffer", -1),
-                                                                          E.DataContent("\"", false, "a buffer", -1) ],
-                                                                   "a buffer", -1) ], "a buffer", -1) ])
+               == [ ES("a", [ AS("b", [ DC("\"", false, "a buffer", -1),
+                                        DC("Hello", false, "a buffer", -1),
+                                        DC("\"", false, "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
+    end
+
+    @testset "Events/Attributes (Negative ... no VI)" begin
+        # Be careful here ... the attributes parser bails as soon as it sees the VI is missing, and then another parser
+        # can kick in. So only check the FIRST events.
+        #
+        @test (collect(E.events(L.State(IOBuffer("<a b"))))
+               == [ ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting '=' after an attribute name.",
+                                                        [ ], "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1),
+                    ME("ERROR: Expecting '>' to end an element open tag.", [ ], "a buffer", -1) ]) 
+
+        events = collect(E.events(L.State(IOBuffer("<a b \"c\">"))))
+        @test length(events) > 1
+        @test first(events) == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting '=' after an attribute name.",
+                                                                   [ ], "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1)
+
+        events = collect(E.events(L.State(IOBuffer("<a b=\"c\" d\"e\">"))))
+        @test length(events) > 1
+        @test first(events) == ES(true, false, "a", [ AS("b", [ DC("c", false, "a buffer", -1) ], "a buffer", -1),
+                                                      AS("d", [ ME("ERROR: Expecting '=' after an attribute name.",
+                                                                   [ ], "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1)
+    end
+
+    @testset "Events/Attributes (Negative ... no quoted value)" begin
+        # Be careful here ... the attributes parser bails as soon as it sees the VI is missing, and then another parser
+        # can kick in. So only check the FIRST events.
+        #
+        events = collect(E.events(L.State(IOBuffer("<a b="))))
+        @test length(events) > 1
+        @test first(events) == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
+                                                                   [ ], "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1)
+        events = collect(E.events(L.State(IOBuffer("<a b = "))))
+        @test length(events) > 1
+        @test first(events) == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
+                                                                   [ ], "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1)
+        events = collect(E.events(L.State(IOBuffer("<a b=c"))))
+        @test length(events) > 1
+        @test first(events) == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
+                                                                   [ ], "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1)
+        events = collect(E.events(L.State(IOBuffer("<a b= c"))))
+        @test length(events) > 1
+        @test first(events) == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
+                                                                   [ ], "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1)
+    end
+
+    @testset "Events/Attributes (Negative ... incomplete quoted value)" begin
+        # Be careful here ... the attributes parser bails as soon as it sees the VI is missing, and then another parser
+        # can kick in. So only check the FIRST events.
+        #
+        events = collect(E.events(L.State(IOBuffer("<a b=\""))))
+        @test length(events) > 1
+        @test first(events) == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting the remainder of an attribute value.",
+                                                                   [ ], "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1)
+        events = collect(E.events(L.State(IOBuffer("<a b=\"c"))))
+        @test length(events) > 1
+        @test first(events) == ES(true, false, "a", [ AS("b", [ DC("c", false, "a buffer", -1),
+                                                                ME("ERROR: Expecting the remainder of an attribute value.",
+                                                                   [ ], "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1)
+    end
+
+    @testset "Events/Attributes (Negative ... unescaped special characters)" begin
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"<\">")))) 
+               == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '<' must be escaped inside an attribute value.",
+                                                         [ L.Token(L.stago, "<", "a buffer", -1) ], 
+                                                         "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"<<<\">")))) 
+               == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '<' must be escaped inside an attribute value.",
+                                                         [ L.Token(L.stago, "<", "a buffer", -1) ], 
+                                                         "a buffer", -1),
+                                                      ME("ERROR: A '<' must be escaped inside an attribute value.",
+                                                         [ L.Token(L.stago, "<", "a buffer", -1) ], 
+                                                         "a buffer", -1),
+                                                      ME("ERROR: A '<' must be escaped inside an attribute value.",
+                                                         [ L.Token(L.stago, "<", "a buffer", -1) ], 
+                                                         "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"Hello, <World!\">")))) 
+               == [ ES(false, false, "a", [ AS("b", [ DC("Hello", false, "a buffer", -1), 
+                                                      DC(",", false, "a buffer", -1), 
+                                                      DC(" ", true, "a buffer", -1), 
+                                                      ME("ERROR: A '<' must be escaped inside an attribute value.",
+                                                         [ L.Token(L.stago, "<", "a buffer", -1) ], "a buffer", -1), 
+                                                      DC("World!", false, "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
+
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"&\">")))) 
+               == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '&' must be escaped inside an attribute value.",
+                                                         [ L.Token(L.ero, "&", "a buffer", -1) ], 
+                                                         "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"&&&\">")))) 
+               == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '&' must be escaped inside an attribute value.",
+                                                         [ L.Token(L.ero, "&", "a buffer", -1) ], 
+                                                         "a buffer", -1),
+                                                      ME("ERROR: A '&' must be escaped inside an attribute value.",
+                                                         [ L.Token(L.ero, "&", "a buffer", -1) ], 
+                                                         "a buffer", -1),
+                                                      ME("ERROR: A '&' must be escaped inside an attribute value.",
+                                                         [ L.Token(L.ero, "&", "a buffer", -1) ], 
+                                                         "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"Jack & Jill\">")))) 
+               == [ ES(false, false, "a", [ AS("b", [ DC("Jack", false, "a buffer", -1), 
+                                                      DC(" ", true, "a buffer", -1), 
+                                                      ME("ERROR: A '&' must be escaped inside an attribute value.",
+                                                         [ L.Token(L.ero, "&", "a buffer", -1) ], "a buffer", -1), 
+                                                      DC(" ", true, "a buffer", -1), 
+                                                      DC("Jill", false, "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
     end
 end

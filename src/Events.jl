@@ -241,7 +241,7 @@ function collect_attributes(tokens)
             if is_token(Lexical.ws, tokens)
                 take!(tokens)
             end
-            collect_attribute_value(value, tokens)
+            collect_attribute_value(vi, value, tokens)
 
         else
             push!(value, MarkupError("ERROR: Expecting '=' after an attribute name.", [ ], Lexical.location_of(name)...))
@@ -250,12 +250,17 @@ function collect_attributes(tokens)
         return AttributeSpecification(name.value, value, Lexical.location_of(name)...)
     end
 
-    function collect_attribute_value(value, tokens)
+    function collect_attribute_value(vi, value, tokens)
         if is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
             delimiter = take!(tokens)
 
             while true
-                if fetch(tokens).token_type == delimiter.token_type
+                if is_eoi(tokens)
+                    push!(value, MarkupError("ERROR: Expecting the remainder of an attribute value.", [ ], 
+                                             Lexical.location_of(vi)...))
+                    break
+
+                elseif fetch(tokens).token_type == delimiter.token_type
                     take!(tokens)
                     break
 
@@ -267,7 +272,7 @@ function collect_attributes(tokens)
 
                 elseif is_token(Lexical.stago, tokens)
                     stago = take!(tokens)
-                    push!(value, MarkupError("ERROR: A '<' must escaped inside an attribute value.", [ stago ],
+                    push!(value, MarkupError("ERROR: A '<' must be escaped inside an attribute value.", [ stago ],
                                              Lexical.location_of(stago)...))
 
                 elseif is_token(Lexical.ws, tokens)
@@ -279,6 +284,9 @@ function collect_attributes(tokens)
                     push!(value, DataContent(data_content.value, Lexical.location_of(data_content)...))
                 end
             end
+
+        else
+            push!(value, MarkupError("ERROR: Expecting a quoted attribute value after '='.", [ ], Lexical.location_of(vi)...))
         end
     end
 
@@ -378,7 +386,8 @@ function element_start(tokens, channel)
 
     if is_token(Lexical.text, tokens)
         name = take!(tokens)
-        attributes = collect_attributes(tokens)
+        attributes = collect_attributes(tokens) # We should really slip the is_recovery flag on the ElementStart if any
+                                                # of the attributes contain a MarkupError.
 
         if is_token(Lexical.ws, tokens) # Trailing white space is allowed ...
             take!(tokens)               # ... and just discard it.
