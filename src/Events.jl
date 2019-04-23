@@ -56,6 +56,29 @@ struct CommentEnd
 end
 
 
+struct DTDEnd
+    identification ::String
+    line_number    ::Int64
+end
+
+struct DTDStart
+    root              ::String
+    public_identifier ::Union{Nothing, String}
+    system_identifier ::Union{Nothing, String}
+    identification    ::String
+    line_number       ::Int64
+end
+
+struct DTDInternalEnd
+    identification ::String
+    line_number    ::Int64
+end
+
+struct DTDInternalStart
+    identification ::String
+    line_number    ::Int64
+end
+
 struct DataContent
     value          ::String
     is_ws          ::Bool
@@ -222,17 +245,13 @@ end
 function collect_attributes(tokens)
     function collect_attribute(tokens)
         name = take!(tokens) # Collect the attribute name token that got us here.
-        if is_token(Lexical.ws, tokens)
-            take!(tokens)
-        end
+        consume_white_space!(tokens)
 
         value = Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter, MarkupError}, 1}()
 
         if is_token(Lexical.vi, tokens)
             vi = take!(tokens)
-            if is_token(Lexical.ws, tokens)
-                take!(tokens)
-            end
+            consume_white_space!(tokens)
             collect_attribute_value(vi, value, tokens)
 
         else
@@ -349,14 +368,123 @@ function comment(mdo, tokens, channel)
 end
 
 
+function consume_white_space!(tokens)
+    if is_token(Lexical.ws, tokens)
+        take!(tokens)
+    end
+end
+
+
+function document_type_declaration(mdo, tokens, channel)
+    function collect_external_identifier(tokens)
+        if is_keyword("SYSTEM", tokens)
+            system = take!(tokens)
+            
+            return ( nothing, stringify(collect_string(Lexical.location_of(system), tokens)) )
+
+        elseif is_keyword("PUBLIC", tokens)
+            public = take!(tokens)
+            public_identifier = collect_string(Lexical.location_of(public), tokens)
+            if public_identifier == nothing
+                # Something is funky. Don't bother trying to parse the system identifier.
+                #
+                return ( nothing, nothing )
+
+            else
+                if is_token(Lexical.ws, tokens)
+                    take!(tokens) # Don't bother holding on to this one. See [1], § 4.2.2 ... the white space is
+                                  # required, which seems kind of lame off hand, but so be it.
+                    system_identifier = collect_string(locations_of(mdo, public_identifier)[:tail], tokens)
+
+                    if system_identifier == nothing
+                        put!(channel, MarkupError("ERROR: Expecting a system identifier following a public identifier.",
+                                                  [ ], locations_of(mdo, public_identifier)[:tail]...))
+                    end
+
+                    return ( stringify(public_identifier), stringify(system_identifier) )
+
+                else
+                    put!(channel, MarkupError("ERROR: Expecting white space following a public identifier.",
+                                              [ ], locations_of(mdo, public_identifier)[:tail]...))
+
+                    return ( stringify(public_identifier), nothing )
+                end
+            end
+
+        else
+            return ( nothing, nothing )
+        end
+    end
+
+
+    function collect_string(location, tokens)
+        consume_white_space!(tokens)
+
+        if is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
+            delimiter = take!(tokens)
+
+            consumed = Array{Lexical.Token, 1}()
+
+            while true
+                if fetch(tokens).token_type == delimiter.token_type
+                    take!(tokens)
+                    break
+
+                else
+                    push!(consumed, take!(tokens))
+                end
+            end
+
+            return consumed
+
+        else
+            put!(channel, MarkupError("ERROR: Expecting a quoted string.", [ ], location...))
+
+            return nothing
+        end
+    end
+
+
+    function stringify(consumed_tokens)
+        return join(map(value -> value.value, consumed_tokens), "")
+    end
+
+
+    doctype = take!(tokens)
+    consume_white_space!(tokens)
+
+    if is_token(Lexical.text, tokens)
+        root = take!(tokens)
+        consume_white_space!(tokens)
+        external_identifier = collect_external_identifier(tokens)
+        consume_white_space!(tokens)
+        if is_token(Lexical.tagc, tokens)
+            tagc = take!(tokens)
+            put!(channel, DTDStart(root.value, external_identifier..., Lexical.location_of(doctype)...))
+            put!(channel, DTDEnd(Lexical.location_of(doctype)...))
+
+        elseif is_token(Lexical.dso, tokens)
+            dso = take!(tokens)
+            put!(channel, DTDStart(root.value, external_identifier..., Lexical.location_of(doctype)...))
+            put!(channel, DTDInternalStart(Lexical.location_of(doctype)...))
+
+        else
+            put!(channel, MarkupError("ERROR: Expecting '>' to end a document type declaration.", 
+                                      [ mdo, doctype, root ], Lexical.location_of(root)...))
+        end
+
+    else
+        put!(channel, MarkupError("ERROR: Expecting a root element name.", [ mdo, doctype ], Lexical.location_of(doctype)...))
+    end
+end
+
+
 function element_end(tokens, channel)
     etago = take!(tokens) # Consume the ETAGO that got us here.
 
     if is_token(Lexical.text, tokens)
         name = take!(tokens)
-        if is_token(Lexical.ws, tokens) # Trailing white space is allowed ...
-            take!(tokens)               # ... and just discard it.
-        end
+        consume_white_space!(tokens)
 
         if is_token(Lexical.tagc, tokens)
             take!(tokens)
@@ -380,10 +508,7 @@ function element_start(tokens, channel)
         name = take!(tokens)
         attributes = collect_attributes(tokens) # We should really slip the is_recovery flag on the ElementStart if any
                                                 # of the attributes contain a MarkupError.
-
-        if is_token(Lexical.ws, tokens) # Trailing white space is allowed ...
-            take!(tokens)               # ... and just discard it.
-        end
+        consume_white_space!(tokens)
 
         if is_token(Lexical.net, tokens)
             take!(tokens)
@@ -510,6 +635,9 @@ function markup_declaration(tokens, channel)
 
     elseif is_token(Lexical.com, tokens)
         comment(mdo, tokens, channel)
+
+    elseif is_keyword("DOCTYPE", tokens)
+        document_type_declaration(mdo, tokens, channel)
 
     else
         put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)...))
