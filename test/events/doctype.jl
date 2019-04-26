@@ -72,4 +72,39 @@
         @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a	[")))) 
                == [ E.DTDStart("a", nothing, nothing, "a buffer", -1), E.DTDInternalStart("a buffer", -1) ])
     end
+
+    @testset "Events/Document Type Declaration (Negative ... invalid or absent document type name.)" begin
+        # Be careful with some of these tests ... the parser keeps going, so we only check the FIRST event. (Otherwise
+        # we're testing the results of some other part of the parser.)
+        #
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE")))) 
+               == [ E.MarkupError("ERROR: Expecting a root element name.", 
+                                  [ L.Token(L.mdo, "<!", "a buffer", -1), L.Token(L.text, "DOCTYPE", "a buffer", -1) ], 
+                                  "a buffer", -1) ])
+        events = collect(E.events(L.State(IOBuffer("<!DOCTYPE >"))))
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.", 
+                                              [ L.Token(L.mdo, "<!", "a buffer", -1), 
+                                                L.Token(L.text, "DOCTYPE", "a buffer", -1) ], "a buffer", -1))
+        events = collect(E.events(L.State(IOBuffer("<!DOCTYPE ["))))
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.", 
+                                              [ L.Token(L.mdo, "<!", "a buffer", -1), 
+                                                L.Token(L.text, "DOCTYPE", "a buffer", -1) ], "a buffer", -1))
+        events = collect(E.events(L.State(IOBuffer("<!DOCTYPE \"root\""))))
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.", 
+                                              [ L.Token(L.mdo, "<!", "a buffer", -1), 
+                                                L.Token(L.text, "DOCTYPE", "a buffer", -1) ], "a buffer", -1))
+        events = collect(E.events(L.State(IOBuffer("<!DOCTYPE 'root'"))))
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.", 
+                                              [ L.Token(L.mdo, "<!", "a buffer", -1), 
+                                                L.Token(L.text, "DOCTYPE", "a buffer", -1) ], "a buffer", -1))
+        events = collect(E.events(L.State(IOBuffer("<!DOCTYPE <"))))
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.", 
+                                              [ L.Token(L.mdo, "<!", "a buffer", -1), 
+                                                L.Token(L.text, "DOCTYPE", "a buffer", -1) ], "a buffer", -1))
+    end
 end
