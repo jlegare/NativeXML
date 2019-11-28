@@ -485,7 +485,7 @@ end
 function entity_declaration(mdo, tokens, channel)
     function collect_entity_definition(entity_name, is_parameter_entity, tokens, channel)
         external_identifier = collect_external_identifier(entity_name, tokens, channel)
-        if external_identifier == ( nothing, nothing )
+        if external_identifier == ( public_identifier = nothing, system_identifier = nothing )
             entity_value = collect_string(Lexical.location_of(entity_name), tokens, channel)
 
             return ( external_identifier = external_identifier, entity_value = stringify(entity_value), ndata_name = nothing )
@@ -788,8 +788,9 @@ end
 function collect_external_identifier(mdo, tokens, channel)
     if is_keyword("SYSTEM", tokens)
         system = take!(tokens)
+        system_identifier = stringify(collect_string(Lexical.location_of(system), tokens, channel))
 
-        return ( nothing, stringify(collect_string(Lexical.location_of(system), tokens, channel)) )
+        return ( public_identifier = nothing,  system_identifier = system_identifier )
 
     elseif is_keyword("PUBLIC", tokens)
         public = take!(tokens)
@@ -797,7 +798,7 @@ function collect_external_identifier(mdo, tokens, channel)
         if public_identifier == nothing
             # Something is funky. Don't bother trying to parse the system identifier.
             #
-            return ( nothing, nothing )
+            return ( public_identifier = nothing, system_identifier = nothing )
 
         else
             if is_token(Lexical.ws, tokens)
@@ -809,22 +810,22 @@ function collect_external_identifier(mdo, tokens, channel)
                     put!(channel, MarkupError("ERROR: Expecting a system identifier following a public identifier.",
                                               [ ], locations_of(mdo, public_identifier)[:tail]...))
 
-                    return ( stringify(public_identifier), nothing )
+                    return ( public_identifier = stringify(public_identifier), system_identifier = nothing )
 
                 else
-                    return ( stringify(public_identifier), stringify(system_identifier) )
+                    return ( public_identifier = stringify(public_identifier), system_identifier = stringify(system_identifier) )
                 end
 
             else
                 put!(channel, MarkupError("ERROR: Expecting white space following a public identifier.",
                                           [ ], locations_of(mdo, public_identifier)[:tail]...))
 
-                return ( stringify(public_identifier), nothing )
+                return ( public_identifier = stringify(public_identifier), system_identifier = nothing )
             end
         end
 
     else
-        return ( nothing, nothing )
+        return ( public_identifier = nothing, system_identifier = nothing )
     end
 end
 
