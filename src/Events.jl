@@ -87,6 +87,24 @@ struct DataContent
 end
 
 
+struct EntityDeclarationExternal
+    name             ::String
+    is_parameter     ::Bool
+    public_identifier::Union{Nothing, String}
+    system_identifier::Union{Nothing, String}
+    ndata_declaration::Union{Nothing, String}
+    identification   ::String
+    line_number      ::Int64
+end
+
+struct EntityDeclarationInternal
+    name             ::String
+    is_parameter     ::Bool
+    entity_definition::String
+    identification   ::String
+    line_number      ::Int64
+end
+
 struct EntityReferenceGeneral
     name           ::String
     identification ::String
@@ -376,87 +394,13 @@ end
 
 
 function document_type_declaration(mdo, tokens, channel)
-    function collect_external_identifier(tokens)
-        if is_keyword("SYSTEM", tokens)
-            system = take!(tokens)
-
-            return ( nothing, stringify(collect_string(Lexical.location_of(system), tokens)) )
-
-        elseif is_keyword("PUBLIC", tokens)
-            public = take!(tokens)
-            public_identifier = collect_string(Lexical.location_of(public), tokens)
-            if public_identifier == nothing
-                # Something is funky. Don't bother trying to parse the system identifier.
-                #
-                return ( nothing, nothing )
-
-            else
-                if is_token(Lexical.ws, tokens)
-                    take!(tokens) # Don't bother holding on to this one. See [1], § 4.2.2 ... the white space is
-                                  # required, which seems kind of lame off hand, but so be it.
-                    system_identifier = collect_string(locations_of(mdo, public_identifier)[:tail], tokens)
-
-                    if system_identifier == nothing
-                        put!(channel, MarkupError("ERROR: Expecting a system identifier following a public identifier.",
-                                                  [ ], locations_of(mdo, public_identifier)[:tail]...))
-                    end
-
-                    return ( stringify(public_identifier), stringify(system_identifier) )
-
-                else
-                    put!(channel, MarkupError("ERROR: Expecting white space following a public identifier.",
-                                              [ ], locations_of(mdo, public_identifier)[:tail]...))
-
-                    return ( stringify(public_identifier), nothing )
-                end
-            end
-
-        else
-            return ( nothing, nothing )
-        end
-    end
-
-
-    function collect_string(location, tokens)
-        consume_white_space!(tokens)
-
-        if is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
-            delimiter = take!(tokens)
-
-            consumed = Array{Lexical.Token, 1}()
-
-            while true
-                if fetch(tokens).token_type == delimiter.token_type
-                    take!(tokens)
-                    break
-
-                else
-                    push!(consumed, take!(tokens))
-                end
-            end
-
-            return consumed
-
-        else
-            put!(channel, MarkupError("ERROR: Expecting a quoted string.", [ ], location...))
-
-            return nothing
-        end
-    end
-
-
-    function stringify(consumed_tokens)
-        return join(map(value -> value.value, consumed_tokens), "")
-    end
-
-
     doctype = take!(tokens)
     consume_white_space!(tokens)
 
     if is_token(Lexical.text, tokens)
         root = take!(tokens)
         consume_white_space!(tokens)
-        external_identifier = collect_external_identifier(tokens)
+        external_identifier = collect_external_identifier(mdo, tokens, channel)
         consume_white_space!(tokens)
         if is_token(Lexical.tagc, tokens)
             tagc = take!(tokens)
@@ -534,6 +478,82 @@ function element_start(tokens, channel)
 
     else
         put!(channel, MarkupError("ERROR: Expecting an element name.", [ stago ], Lexical.location_of(stago)...))
+    end
+end
+
+
+function entity_declaration(mdo, tokens, channel)
+    function collect_entity_definition(entity_name, is_parameter_entity, tokens, channel)
+        external_identifier = collect_external_identifier(entity_name, tokens, channel)
+        if external_identifier == ( nothing, nothing )
+            entity_value = collect_string(Lexical.location_of(entity_name), tokens, channel)
+
+            return ( external_identifier = external_identifier, entity_value = stringify(entity_value), ndata_name = nothing )
+
+        else
+            if is_parameter_entity
+                return ( external_identifier = external_identifier, entity_value = nothing, ndata_name = nothing )
+
+            else
+                consume_white_space!(tokens)
+                if is_keyword("NDATA", tokens)
+                    ndata = take!(tokens) # Consume the NDATA keyword.
+                    consume_white_space!(tokens)
+
+                    if is_token(Lexical.text, tokens)
+                        ndata_name = take!(tokens)
+
+                        return ( external_identifier = external_identifier, entity_value = nothing, ndata_name =  ndata_name.value )
+
+                    else
+                        put!(channel, MarkupError("ERROR: Expecting a notation name.", [ entity_name ],
+                                                  Lexical.location_of(entity_name)...))
+
+                        return ( external_identifier = external_identifier, entity_value = nothing, ndata_name = nothing )
+                    end
+
+                else
+                    return ( external_identifier = external_identifier, entity_value = nothing, ndata_name = nothing )
+                end
+            end
+        end
+    end
+
+
+    entity = take!(tokens)
+    consume_white_space!(tokens)
+
+    is_parameter_entity = is_token(Lexical.pero, tokens)
+    if is_parameter_entity
+        take!(tokens)
+        consume_white_space!(tokens)
+    end
+
+    if is_token(Lexical.text, tokens)
+        entity_name = take!(tokens)
+        consume_white_space!(tokens)
+        entity_definition = collect_entity_definition(entity_name, is_parameter_entity, tokens, channel)
+        consume_white_space!(tokens)
+        if is_token(Lexical.tagc, tokens)
+            tagc = take!(tokens)
+            if entity_definition[2] == nothing
+                put!(channel, EntityDeclarationExternal(entity_name.value, is_parameter_entity,
+                                                        entity_definition[:external_identifier]...,
+                                                        entity_definition[:ndata_name],
+                                                        Lexical.location_of(entity)...))
+
+            else
+                put!(channel, EntityDeclarationInternal(entity_name.value, is_parameter_entity, entity_definition[:entity_value],
+                                                        Lexical.location_of(entity)...))
+            end
+
+        else
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an entity declaration.",
+                                      [ mdo, entity, entity_name ], Lexical.location_of(entity_name)...))
+        end
+
+    else
+        put!(channel, MarkupError("ERROR: Expecting an entity name.", [ mdo, entity ], Lexical.location_of(entity)...))
     end
 end
 
@@ -638,6 +658,9 @@ function markup_declaration(tokens, channel)
 
     elseif is_keyword("DOCTYPE", tokens)
         document_type_declaration(mdo, tokens, channel)
+
+    elseif is_keyword("ENTITY", tokens)
+        entity_declaration(mdo, tokens, channel)
 
     else
         put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)...))
@@ -761,5 +784,84 @@ function entity_reference(tokens, in_attribute = false)
     end
 end
 
+
+function collect_external_identifier(mdo, tokens, channel)
+    if is_keyword("SYSTEM", tokens)
+        system = take!(tokens)
+
+        return ( nothing, stringify(collect_string(Lexical.location_of(system), tokens, channel)) )
+
+    elseif is_keyword("PUBLIC", tokens)
+        public = take!(tokens)
+        public_identifier = collect_string(Lexical.location_of(public), tokens, channel)
+        if public_identifier == nothing
+            # Something is funky. Don't bother trying to parse the system identifier.
+            #
+            return ( nothing, nothing )
+
+        else
+            if is_token(Lexical.ws, tokens)
+                take!(tokens) # Don't bother holding on to this one. See [1], § 4.2.2 ... the white space is
+                              # required, which seems kind of lame off hand, but so be it.
+                system_identifier = collect_string(locations_of(mdo, public_identifier)[:tail], tokens, channel)
+
+                if system_identifier == nothing
+                    put!(channel, MarkupError("ERROR: Expecting a system identifier following a public identifier.",
+                                              [ ], locations_of(mdo, public_identifier)[:tail]...))
+
+                    return ( stringify(public_identifier), nothing )
+
+                else
+                    return ( stringify(public_identifier), stringify(system_identifier) )
+                end
+
+            else
+                put!(channel, MarkupError("ERROR: Expecting white space following a public identifier.",
+                                          [ ], locations_of(mdo, public_identifier)[:tail]...))
+
+                return ( stringify(public_identifier), nothing )
+            end
+        end
+
+    else
+        return ( nothing, nothing )
+    end
+end
+
+
+function collect_string(location, tokens, channel)
+    consume_white_space!(tokens)
+
+    if is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
+        delimiter = take!(tokens)
+
+        consumed = Array{Lexical.Token, 1}()
+
+        while true
+            if fetch(tokens).token_type == delimiter.token_type
+                take!(tokens)
+                break
+
+            else
+                push!(consumed, take!(tokens))
+            end
+        end
+
+        return consumed
+
+    else
+        put!(channel, MarkupError("ERROR: Expecting a quoted string.", [ ], location...))
+
+        return nothing
+    end
+end
+
+# ----------------------------------------
+# UTILITIES
+# ----------------------------------------
+
+function stringify(consumed_tokens)
+    return join(map(value -> value.value, consumed_tokens), "")
+end
 
 end
