@@ -88,7 +88,7 @@ const TwoCharacterTokens = Dict([ '<', '!' ] => mdo,
                                 [ '<', '?' ] => pio,
                                 [ '?', '>' ] => pic,
                                 [ '<', '/' ] => etago)
-const OneCharacterTokens = Dict('>'  => mdc, # Again, this will never show up ... we'll always emit tagc instead. 
+const OneCharacterTokens = Dict('>'  => mdc, # Again, this will never show up ... we'll always emit tagc instead.
                                 '['  => dso,
                                 ']'  => dsc,
                                 '#'  => rni,
@@ -123,7 +123,7 @@ location_of(token::Token) = ( token.identification, token.line_number )
 
 
 function consume_last_match(state::State)
-    skip(state.io, state.length_of) 
+    skip(state.io, state.length_of)
 
     return state.last_match
 end

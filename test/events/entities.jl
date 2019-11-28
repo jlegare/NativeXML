@@ -64,10 +64,10 @@
         @test collect(E.events(L.State(IOBuffer("&aé;")))) == [ E.EntityReferenceGeneral("aé", "a buffer", -1) ]
         @test collect(E.events(L.State(IOBuffer("&éa;")))) == [ E.EntityReferenceGeneral("éa", "a buffer", -1) ]
 
-        @test collect(E.events(L.State(IOBuffer("&a;&é;")))) == [ E.EntityReferenceGeneral("a", "a buffer", -1), 
+        @test collect(E.events(L.State(IOBuffer("&a;&é;")))) == [ E.EntityReferenceGeneral("a", "a buffer", -1),
                                                                   E.EntityReferenceGeneral("é", "a buffer", -1) ]
 
-        @test collect(E.events(L.State(IOBuffer("&é;&a;")))) == [ E.EntityReferenceGeneral("é", "a buffer", -1), 
+        @test collect(E.events(L.State(IOBuffer("&é;&a;")))) == [ E.EntityReferenceGeneral("é", "a buffer", -1),
                                                                   E.EntityReferenceGeneral("a", "a buffer", -1) ]
     end
 
@@ -120,10 +120,10 @@
         @test collect(E.events(L.State(IOBuffer("%aé;")))) == [ E.EntityReferenceParameter("aé", "a buffer", -1) ]
         @test collect(E.events(L.State(IOBuffer("%éa;")))) == [ E.EntityReferenceParameter("éa", "a buffer", -1) ]
 
-        @test collect(E.events(L.State(IOBuffer("%a;%é;")))) == [ E.EntityReferenceParameter("a", "a buffer", -1), 
+        @test collect(E.events(L.State(IOBuffer("%a;%é;")))) == [ E.EntityReferenceParameter("a", "a buffer", -1),
                                                                   E.EntityReferenceParameter("é", "a buffer", -1) ]
 
-        @test collect(E.events(L.State(IOBuffer("%é;%a;")))) == [ E.EntityReferenceParameter("é", "a buffer", -1), 
+        @test collect(E.events(L.State(IOBuffer("%é;%a;")))) == [ E.EntityReferenceParameter("é", "a buffer", -1),
                                                                   E.EntityReferenceParameter("a", "a buffer", -1) ]
     end
 

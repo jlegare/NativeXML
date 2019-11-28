@@ -100,7 +100,7 @@
         @test (collect(E.events(L.State(IOBuffer("<a b"))))
                == [ ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting '=' after an attribute name.",
                                                         [ ], "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1),
-                    ME("ERROR: Expecting '>' to end an element open tag.", [ ], "a buffer", -1) ]) 
+                    ME("ERROR: Expecting '>' to end an element open tag.", [ ], "a buffer", -1) ])
 
         events = collect(E.events(L.State(IOBuffer("<a b \"c\">"))))
         @test length(events) > 1
@@ -152,48 +152,48 @@
     end
 
     @testset "Events/Attributes (Negative ... unescaped special characters)" begin
-        @test (collect(E.events(L.State(IOBuffer("<a b=\"<\">")))) 
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"<\">"))))
                == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '<' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.stago, "<", "a buffer", -1) ], 
+                                                         [ L.Token(L.stago, "<", "a buffer", -1) ],
                                                          "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<a b=\"<<<\">")))) 
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"<<<\">"))))
                == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '<' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.stago, "<", "a buffer", -1) ], 
+                                                         [ L.Token(L.stago, "<", "a buffer", -1) ],
                                                          "a buffer", -1),
                                                       ME("ERROR: A '<' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.stago, "<", "a buffer", -1) ], 
+                                                         [ L.Token(L.stago, "<", "a buffer", -1) ],
                                                          "a buffer", -1),
                                                       ME("ERROR: A '<' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.stago, "<", "a buffer", -1) ], 
+                                                         [ L.Token(L.stago, "<", "a buffer", -1) ],
                                                          "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<a b=\"Hello, <World!\">")))) 
-               == [ ES(false, false, "a", [ AS("b", [ DC("Hello", false, "a buffer", -1), 
-                                                      DC(",", false, "a buffer", -1), 
-                                                      DC(" ", true, "a buffer", -1), 
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"Hello, <World!\">"))))
+               == [ ES(false, false, "a", [ AS("b", [ DC("Hello", false, "a buffer", -1),
+                                                      DC(",", false, "a buffer", -1),
+                                                      DC(" ", true, "a buffer", -1),
                                                       ME("ERROR: A '<' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.stago, "<", "a buffer", -1) ], "a buffer", -1), 
+                                                         [ L.Token(L.stago, "<", "a buffer", -1) ], "a buffer", -1),
                                                       DC("World!", false, "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
 
-        @test (collect(E.events(L.State(IOBuffer("<a b=\"&\">")))) 
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"&\">"))))
                == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '&' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.ero, "&", "a buffer", -1) ], 
+                                                         [ L.Token(L.ero, "&", "a buffer", -1) ],
                                                          "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<a b=\"&&&\">")))) 
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"&&&\">"))))
                == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '&' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.ero, "&", "a buffer", -1) ], 
+                                                         [ L.Token(L.ero, "&", "a buffer", -1) ],
                                                          "a buffer", -1),
                                                       ME("ERROR: A '&' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.ero, "&", "a buffer", -1) ], 
+                                                         [ L.Token(L.ero, "&", "a buffer", -1) ],
                                                          "a buffer", -1),
                                                       ME("ERROR: A '&' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.ero, "&", "a buffer", -1) ], 
+                                                         [ L.Token(L.ero, "&", "a buffer", -1) ],
                                                          "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<a b=\"Jack & Jill\">")))) 
-               == [ ES(false, false, "a", [ AS("b", [ DC("Jack", false, "a buffer", -1), 
-                                                      DC(" ", true, "a buffer", -1), 
+        @test (collect(E.events(L.State(IOBuffer("<a b=\"Jack & Jill\">"))))
+               == [ ES(false, false, "a", [ AS("b", [ DC("Jack", false, "a buffer", -1),
+                                                      DC(" ", true, "a buffer", -1),
                                                       ME("ERROR: A '&' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.ero, "&", "a buffer", -1) ], "a buffer", -1), 
-                                                      DC(" ", true, "a buffer", -1), 
+                                                         [ L.Token(L.ero, "&", "a buffer", -1) ], "a buffer", -1),
+                                                      DC(" ", true, "a buffer", -1),
                                                       DC("Jill", false, "a buffer", -1) ], "a buffer", -1) ], "a buffer", -1) ])
     end
 end

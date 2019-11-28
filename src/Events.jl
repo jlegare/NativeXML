@@ -135,7 +135,7 @@ end
 
 struct ElementStart
     is_recovery    ::Bool
-    is_empty       ::Bool    
+    is_empty       ::Bool
     name           ::String
     attributes     ::Array{AttributeSpecification, 1}
     identification ::String
@@ -148,12 +148,12 @@ end
 
 CommentEnd(identification, line_number) = CommentEnd(false, identification, line_number)
 CDATAMarkedSectionEnd(identification, line_number) = CDATAMarkedSectionEnd(false, identification, line_number)
-ElementEnd(name, identification, line_number) = ElementEnd(false, name, identification, line_number) 
+ElementEnd(name, identification, line_number) = ElementEnd(false, name, identification, line_number)
 ElementStart(name, attributes, identification, line_number) = ElementStart(false, name, attributes, identification, line_number)
-ElementStart(is_empty, name, attributes, identification, line_number) = ElementStart(false, is_empty, name, attributes, 
+ElementStart(is_empty, name, attributes, identification, line_number) = ElementStart(false, is_empty, name, attributes,
                                                                                      identification, line_number)
 
-DataContent(tokens::Array, identification, line_number) = DataContent(join(map(token -> token.value, tokens), ""), 
+DataContent(tokens::Array, identification, line_number) = DataContent(join(map(token -> token.value, tokens), ""),
                                                                       identification, line_number)
 DataContent(value, identification, line_number) = DataContent(value, false, identification, line_number)
 
@@ -267,7 +267,7 @@ function collect_attributes(tokens)
 
             while true
                 if is_eoi(tokens)
-                    push!(value, MarkupError("ERROR: Expecting the remainder of an attribute value.", [ ], 
+                    push!(value, MarkupError("ERROR: Expecting the remainder of an attribute value.", [ ],
                                              Lexical.location_of(vi)...))
                     break
 
@@ -379,7 +379,7 @@ function document_type_declaration(mdo, tokens, channel)
     function collect_external_identifier(tokens)
         if is_keyword("SYSTEM", tokens)
             system = take!(tokens)
-            
+
             return ( nothing, stringify(collect_string(Lexical.location_of(system), tokens)) )
 
         elseif is_keyword("PUBLIC", tokens)
@@ -469,7 +469,7 @@ function document_type_declaration(mdo, tokens, channel)
             put!(channel, DTDInternalStart(Lexical.location_of(doctype)...))
 
         else
-            put!(channel, MarkupError("ERROR: Expecting '>' to end a document type declaration.", 
+            put!(channel, MarkupError("ERROR: Expecting '>' to end a document type declaration.",
                                       [ mdo, doctype, root ], Lexical.location_of(root)...))
         end
 
@@ -689,7 +689,7 @@ function processing_instruction(tokens, channel)
 
                 elseif is_eoi(tokens)
                     t = vcat(pio, target, consumed)
-                    put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", 
+                    put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
                                               t, Lexical.location_of(t[end])...))
                     break
 

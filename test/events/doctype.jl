@@ -23,53 +23,53 @@
 
         # Basic tests ... no internal subset specification. Assume the document type name is handled correctly.
         #
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a SYSTEM \"\">")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a SYSTEM \"\">"))))
                == [ E.DTDStart("a", nothing, "", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a\nSYSTEM\t\"\"	>")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a\nSYSTEM\t\"\"	>"))))
                == [ E.DTDStart("a", nothing, "", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a SYSTEM \"   \">")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a SYSTEM \"   \">"))))
                == [ E.DTDStart("a", nothing, "   ", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
-        
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a PUBLIC \"\" \"\">")))) 
+
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a PUBLIC \"\" \"\">"))))
                == [ E.DTDStart("a", "", "", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a\nPUBLIC\r\"\"\t\"\"	>")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a\nPUBLIC\r\"\"\t\"\"	>"))))
                == [ E.DTDStart("a", "", "", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a PUBLIC \"   \" \"   \">")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a PUBLIC \"   \" \"   \">"))))
                == [ E.DTDStart("a", "   ", "   ", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
-        
+
         # This is from the XML specification, § 2.8 ...
         #
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting SYSTEM \"hello.dtd\">")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting SYSTEM \"hello.dtd\">"))))
                == [ E.DTDStart("greeting", nothing, "hello.dtd", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
         #
         # ... with a few simple variations ...
         #
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting SYSTEM 'hello.dtd'>")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting SYSTEM 'hello.dtd'>"))))
                == [ E.DTDStart("greeting", nothing, "hello.dtd", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting SYSTEM '\"hello.dtd\"'>")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting SYSTEM '\"hello.dtd\"'>"))))
                == [ E.DTDStart("greeting", nothing, "\"hello.dtd\"", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting SYSTEM \"'hello.dtd'\">")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting SYSTEM \"'hello.dtd'\">"))))
                == [ E.DTDStart("greeting", nothing, "'hello.dtd'", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
         #
         # ... and a few variations that add a public identifier. (Yes, these public identifiers are bogus. That isn't
         # the point of these tests.)
         #
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting PUBLIC 'salut.dtd' 'hello.dtd'>")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting PUBLIC 'salut.dtd' 'hello.dtd'>"))))
                == [ E.DTDStart("greeting", "salut.dtd", "hello.dtd", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting PUBLIC '\"salut.dtd\"' '\"hello.dtd\"'>")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting PUBLIC '\"salut.dtd\"' '\"hello.dtd\"'>"))))
                == [ E.DTDStart("greeting", "\"salut.dtd\"", "\"hello.dtd\"", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting PUBLIC \"'salut.dtd'\" \"'hello.dtd'\">")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE greeting PUBLIC \"'salut.dtd'\" \"'hello.dtd'\">"))))
                == [ E.DTDStart("greeting", "'salut.dtd'", "'hello.dtd'", "a buffer", -1), E.DTDEnd("a buffer", -1) ])
 
         # Basic tests ... no external subset specification. Assume the document type name is handled correctly.
         #
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a [")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a ["))))
                == [ E.DTDStart("a", nothing, nothing, "a buffer", -1), E.DTDInternalStart("a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a[")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a["))))
                == [ E.DTDStart("a", nothing, nothing, "a buffer", -1), E.DTDInternalStart("a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a\n[")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a\n["))))
                == [ E.DTDStart("a", nothing, nothing, "a buffer", -1), E.DTDInternalStart("a buffer", -1) ])
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a	[")))) 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE a	["))))
                == [ E.DTDStart("a", nothing, nothing, "a buffer", -1), E.DTDInternalStart("a buffer", -1) ])
     end
 
@@ -77,34 +77,39 @@
         # Be careful with some of these tests ... the parser keeps going, so we only check the FIRST event. (Otherwise
         # we're testing the results of some other part of the parser.)
         #
-        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE")))) 
-               == [ E.MarkupError("ERROR: Expecting a root element name.", 
-                                  [ L.Token(L.mdo, "<!", "a buffer", -1), L.Token(L.text, "DOCTYPE", "a buffer", -1) ], 
+        @test (collect(E.events(L.State(IOBuffer("<!DOCTYPE"))))
+               == [ E.MarkupError("ERROR: Expecting a root element name.",
+                                  [ L.Token(L.mdo, "<!", "a buffer", -1), L.Token(L.text, "DOCTYPE", "a buffer", -1) ],
                                   "a buffer", -1) ])
+        events = collect(E.events(L.State(IOBuffer("<!DOCTYPE>"))))
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.",
+                                              [ L.Token(L.mdo, "<!", "a buffer", -1),
+                                                L.Token(L.text, "DOCTYPE", "a buffer", -1) ], "a buffer", -1))
         events = collect(E.events(L.State(IOBuffer("<!DOCTYPE >"))))
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.", 
-                                              [ L.Token(L.mdo, "<!", "a buffer", -1), 
+        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.",
+                                              [ L.Token(L.mdo, "<!", "a buffer", -1),
                                                 L.Token(L.text, "DOCTYPE", "a buffer", -1) ], "a buffer", -1))
         events = collect(E.events(L.State(IOBuffer("<!DOCTYPE ["))))
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.", 
-                                              [ L.Token(L.mdo, "<!", "a buffer", -1), 
+        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.",
+                                              [ L.Token(L.mdo, "<!", "a buffer", -1),
                                                 L.Token(L.text, "DOCTYPE", "a buffer", -1) ], "a buffer", -1))
         events = collect(E.events(L.State(IOBuffer("<!DOCTYPE \"root\""))))
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.", 
-                                              [ L.Token(L.mdo, "<!", "a buffer", -1), 
+        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.",
+                                              [ L.Token(L.mdo, "<!", "a buffer", -1),
                                                 L.Token(L.text, "DOCTYPE", "a buffer", -1) ], "a buffer", -1))
         events = collect(E.events(L.State(IOBuffer("<!DOCTYPE 'root'"))))
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.", 
-                                              [ L.Token(L.mdo, "<!", "a buffer", -1), 
+        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.",
+                                              [ L.Token(L.mdo, "<!", "a buffer", -1),
                                                 L.Token(L.text, "DOCTYPE", "a buffer", -1) ], "a buffer", -1))
         events = collect(E.events(L.State(IOBuffer("<!DOCTYPE <"))))
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.", 
-                                              [ L.Token(L.mdo, "<!", "a buffer", -1), 
+        @test (first(events) == E.MarkupError("ERROR: Expecting a root element name.",
+                                              [ L.Token(L.mdo, "<!", "a buffer", -1),
                                                 L.Token(L.text, "DOCTYPE", "a buffer", -1) ], "a buffer", -1))
     end
 end
