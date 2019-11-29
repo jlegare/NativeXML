@@ -23,6 +23,14 @@ import .Lexical
 # TYPE DECLARATIONS
 # ----------------------------------------
 
+struct ExternalIdentifier
+    public_identifier ::Union{Nothing, String}
+    system_identifier ::Union{Nothing, String}
+    identification ::String
+    line_number    ::Int64
+end
+
+
 struct CDATAMarkedSectionStart
     identification ::String
     line_number    ::Int64
@@ -61,23 +69,26 @@ struct DTDEnd
     line_number    ::Int64
 end
 
+
 struct DTDStart
-    root              ::String
-    public_identifier ::Union{Nothing, String}
-    system_identifier ::Union{Nothing, String}
-    identification    ::String
-    line_number       ::Int64
+    root                ::String
+    external_identifier ::Union{Nothing, ExternalIdentifier}
+    identification      ::String
+    line_number         ::Int64
 end
+
 
 struct DTDInternalEnd
     identification ::String
     line_number    ::Int64
 end
 
+
 struct DTDInternalStart
     identification ::String
     line_number    ::Int64
 end
+
 
 struct DataContent
     value          ::String
@@ -88,22 +99,23 @@ end
 
 
 struct EntityDeclarationExternal
-    name             ::String
-    is_parameter     ::Bool
-    public_identifier::Union{Nothing, String}
-    system_identifier::Union{Nothing, String}
-    ndata_declaration::Union{Nothing, String}
-    identification   ::String
-    line_number      ::Int64
+    name                ::String
+    is_parameter        ::Bool
+    external_identifier ::Union{Nothing, ExternalIdentifier}
+    ndata_declaration   ::Union{Nothing, String}
+    identification      ::String
+    line_number         ::Int64
 end
 
+
 struct EntityDeclarationInternal
-    name             ::String
-    is_parameter     ::Bool
-    entity_definition::String
-    identification   ::String
-    line_number      ::Int64
+    name           ::String
+    is_parameter   ::Bool
+    entity_value   ::String
+    identification ::String
+    line_number    ::Int64
 end
+
 
 struct EntityReferenceGeneral
     name           ::String
@@ -404,12 +416,12 @@ function document_type_declaration(mdo, tokens, channel)
         consume_white_space!(tokens)
         if is_token(Lexical.tagc, tokens)
             tagc = take!(tokens)
-            put!(channel, DTDStart(root.value, external_identifier..., Lexical.location_of(doctype)...))
+            put!(channel, DTDStart(root.value, external_identifier, Lexical.location_of(doctype)...))
             put!(channel, DTDEnd(Lexical.location_of(doctype)...))
 
         elseif is_token(Lexical.dso, tokens)
             dso = take!(tokens)
-            put!(channel, DTDStart(root.value, external_identifier..., Lexical.location_of(doctype)...))
+            put!(channel, DTDStart(root.value, external_identifier, Lexical.location_of(doctype)...))
             put!(channel, DTDInternalStart(Lexical.location_of(doctype)...))
 
         else
@@ -483,38 +495,32 @@ end
 
 
 function entity_declaration(mdo, tokens, channel)
-    function collect_entity_definition(entity_name, is_parameter_entity, tokens, channel)
+    function collect_entity_definition(entity_name, tokens, channel)
         external_identifier = collect_external_identifier(entity_name, tokens, channel)
-        if external_identifier == ( public_identifier = nothing, system_identifier = nothing )
+        if external_identifier == nothing
             entity_value = collect_string(Lexical.location_of(entity_name), tokens, channel)
 
             return ( external_identifier = external_identifier, entity_value = stringify(entity_value), ndata_name = nothing )
 
         else
-            if is_parameter_entity
-                return ( external_identifier = external_identifier, entity_value = nothing, ndata_name = nothing )
-
-            else
+            consume_white_space!(tokens)
+            if is_keyword("NDATA", tokens)
+                ndata = take!(tokens) # Consume the NDATA keyword.
                 consume_white_space!(tokens)
-                if is_keyword("NDATA", tokens)
-                    ndata = take!(tokens) # Consume the NDATA keyword.
-                    consume_white_space!(tokens)
 
-                    if is_token(Lexical.text, tokens)
-                        ndata_name = take!(tokens)
+                if is_token(Lexical.text, tokens)
+                    ndata_name = take!(tokens)
 
-                        return ( external_identifier = external_identifier, entity_value = nothing, ndata_name =  ndata_name.value )
-
-                    else
-                        put!(channel, MarkupError("ERROR: Expecting a notation name.", [ entity_name ],
-                                                  Lexical.location_of(entity_name)...))
-
-                        return ( external_identifier = external_identifier, entity_value = nothing, ndata_name = nothing )
-                    end
+                    return ( external_identifier = external_identifier, entity_value = nothing, ndata_name =  ndata_name.value )
 
                 else
+                    put!(channel, MarkupError("ERROR: Expecting a notation name.", [ ndata ], Lexical.location_of(entity_name)...))
+
                     return ( external_identifier = external_identifier, entity_value = nothing, ndata_name = nothing )
                 end
+
+            else
+                return ( external_identifier = external_identifier, entity_value = nothing, ndata_name = nothing )
             end
         end
     end
@@ -532,24 +538,33 @@ function entity_declaration(mdo, tokens, channel)
     if is_token(Lexical.text, tokens)
         entity_name = take!(tokens)
         consume_white_space!(tokens)
-        entity_definition = collect_entity_definition(entity_name, is_parameter_entity, tokens, channel)
+        ( external_identifier, entity_value, ndata_name ) = collect_entity_definition(entity_name, tokens, channel)
         consume_white_space!(tokens)
+
+        if is_parameter_entity
+            put!(channel, MarkupError("ERROR: A parameter entity cannot have a notation.", [ ndata_name ], 
+                                      Lexical.location_of(entity_name)...))
+            ndata_name = nothing
+        end
+
         if is_token(Lexical.tagc, tokens)
             tagc = take!(tokens)
-            if entity_definition[2] == nothing
-                put!(channel, EntityDeclarationExternal(entity_name.value, is_parameter_entity,
-                                                        entity_definition[:external_identifier]...,
-                                                        entity_definition[:ndata_name],
-                                                        Lexical.location_of(entity)...))
-
-            else
-                put!(channel, EntityDeclarationInternal(entity_name.value, is_parameter_entity, entity_definition[:entity_value],
-                                                        Lexical.location_of(entity)...))
-            end
 
         else
-            put!(channel, MarkupError("ERROR: Expecting '>' to end an entity declaration.",
-                                      [ mdo, entity, entity_name ], Lexical.location_of(entity_name)...))
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an entity declaration.", [ ], 
+                                      Lexical.location_of(entity_name)...))
+            # From now on in this branch, we're basically doing error-recovery: better to pretend the entity declaration
+            # was properly parsed, otherwise there could be a cascade of errors down the line.
+            #
+        end
+
+        if entity_value == nothing
+            put!(channel, EntityDeclarationExternal(entity_name.value, is_parameter_entity,
+                                                    external_identifier, ndata_name, Lexical.location_of(entity)...))
+
+        else
+            put!(channel, EntityDeclarationInternal(entity_name.value, is_parameter_entity, entity_value, 
+                                                    Lexical.location_of(entity)...))
         end
 
     else
@@ -790,7 +805,7 @@ function collect_external_identifier(mdo, tokens, channel)
         system = take!(tokens)
         system_identifier = stringify(collect_string(Lexical.location_of(system), tokens, channel))
 
-        return ( public_identifier = nothing,  system_identifier = system_identifier )
+        return ExternalIdentifier(nothing, system_identifier, Lexical.location_of(system)...)
 
     elseif is_keyword("PUBLIC", tokens)
         public = take!(tokens)
@@ -798,7 +813,7 @@ function collect_external_identifier(mdo, tokens, channel)
         if public_identifier == nothing
             # Something is funky. Don't bother trying to parse the system identifier.
             #
-            return ( public_identifier = nothing, system_identifier = nothing )
+            return nothing
 
         else
             if is_token(Lexical.ws, tokens)
@@ -810,22 +825,23 @@ function collect_external_identifier(mdo, tokens, channel)
                     put!(channel, MarkupError("ERROR: Expecting a system identifier following a public identifier.",
                                               [ ], locations_of(mdo, public_identifier)[:tail]...))
 
-                    return ( public_identifier = stringify(public_identifier), system_identifier = nothing )
+                    return ExternalIdentifier(stringify(public_identifier), nothing, Lexical.location_of(public)...)
 
                 else
-                    return ( public_identifier = stringify(public_identifier), system_identifier = stringify(system_identifier) )
+                    return ExternalIdentifier(stringify(public_identifier), stringify(system_identifier), 
+                                              Lexical.location_of(public)...)
                 end
 
             else
                 put!(channel, MarkupError("ERROR: Expecting white space following a public identifier.",
                                           [ ], locations_of(mdo, public_identifier)[:tail]...))
 
-                return ( public_identifier = stringify(public_identifier), system_identifier = nothing )
+                return ExternalIdentifier(stringify(public_identifier), nothing, Lexical.location_of(public)...)
             end
         end
 
     else
-        return ( public_identifier = nothing, system_identifier = nothing )
+        return nothing
     end
 end
 
