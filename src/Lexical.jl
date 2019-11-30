@@ -137,7 +137,31 @@ function consume_until(state::State, end_markers::Set{Char})
     while !eof(state.io)
         c = read(state.io, Char)
         if c ∈ end_markers
-            break
+            if c == '-'
+                # Be careful here: '-' is a token in SGML (minus), but in XML we need to look ahead to see if it is
+                # followed by another '-'. If so, then "--" is a token (comm). If not, it is part of the current token
+                # if we're not at EOF. If we are at EOF, it is '-' (comm), and we bail.
+                #
+                # Ultimately, it might be easier to handle this in an other layer, by consuming a sequence of tokens and
+                # grouping then. But this will do for now.
+                #
+                if eof(state.io)
+                    break
+                end
+
+                current_position = position(state.io)
+
+                if read(state.io, Char) == '-'
+                    break
+                else
+                    # Keep going.
+                    #
+                    seek(state.io, current_position)
+                end
+
+            else
+                break
+            end
         end
         bytes_read = position(state.io) - start
         push!(consumed, c)

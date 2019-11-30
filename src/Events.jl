@@ -541,8 +541,8 @@ function entity_declaration(mdo, tokens, channel)
         ( external_identifier, entity_value, ndata_name ) = collect_entity_definition(entity_name, tokens, channel)
         consume_white_space!(tokens)
 
-        if is_parameter_entity
-            put!(channel, MarkupError("ERROR: A parameter entity cannot have a notation.", [ ndata_name ], 
+        if is_parameter_entity && ndata_name != nothing
+            put!(channel, MarkupError("ERROR: A parameter entity cannot have a notation.", [ ndata_name ],
                                       Lexical.location_of(entity_name)...))
             ndata_name = nothing
         end
@@ -551,7 +551,7 @@ function entity_declaration(mdo, tokens, channel)
             tagc = take!(tokens)
 
         else
-            put!(channel, MarkupError("ERROR: Expecting '>' to end an entity declaration.", [ ], 
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an entity declaration.", [ ],
                                       Lexical.location_of(entity_name)...))
             # From now on in this branch, we're basically doing error-recovery: better to pretend the entity declaration
             # was properly parsed, otherwise there could be a cascade of errors down the line.
@@ -563,7 +563,7 @@ function entity_declaration(mdo, tokens, channel)
                                                     external_identifier, ndata_name, Lexical.location_of(entity)...))
 
         else
-            put!(channel, EntityDeclarationInternal(entity_name.value, is_parameter_entity, entity_value, 
+            put!(channel, EntityDeclarationInternal(entity_name.value, is_parameter_entity, entity_value,
                                                     Lexical.location_of(entity)...))
         end
 
@@ -828,7 +828,7 @@ function collect_external_identifier(mdo, tokens, channel)
                     return ExternalIdentifier(stringify(public_identifier), nothing, Lexical.location_of(public)...)
 
                 else
-                    return ExternalIdentifier(stringify(public_identifier), stringify(system_identifier), 
+                    return ExternalIdentifier(stringify(public_identifier), stringify(system_identifier),
                                               Lexical.location_of(public)...)
                 end
 
