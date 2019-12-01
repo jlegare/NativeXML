@@ -1,8 +1,8 @@
-@testset "Events/Entity Declaration" begin
+@testset "Events/Entity Declarations" begin
     E = Events
     L = Events.Lexical
 
-    @testset "Events/Entity Declaration, Internal General (Positive)" begin
+    @testset "Events/Entity Declarations, Internal General (Positive)" begin
         # Basic tests ... empty entity value.
         #
         @test (collect(E.events(L.State(IOBuffer("<!ENTITY a \"\">")))) 
@@ -34,7 +34,7 @@
                == [ E.EntityDeclarationInternal("WhatHeSaid", false, "He said %YN;", "a buffer", -1) ])
     end
 
-    @testset "Events/Entity Declaration, Internal Parameter (Positive)" begin
+    @testset "Events/Entity Declarations, Internal Parameter (Positive)" begin
         # Basic tests ... empty entity value.
         #
         @test (collect(E.events(L.State(IOBuffer("<!ENTITY % a \"\">")))) 

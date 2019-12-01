@@ -1,12 +1,12 @@
-@testset "Events/Basic" begin
+@testset "Events/Data Content" begin
     E = Events
     L = Events.Lexical
 
-    @testset "Events/Basic/Empty String" begin
+    @testset "Events/Data Content/Empty String" begin
         @test collect(E.events(L.State(IOBuffer("")))) == [ ]
     end
 
-    @testset "Events/Basic/White Space" begin
+    @testset "Events/Data Content/White Space" begin
         @test collect(E.events(L.State(IOBuffer("\u20")))) == [ E.DataContent("\u20", true, "a buffer", -1) ]
         @test collect(E.events(L.State(IOBuffer(" "))))    == [ E.DataContent(" ", true, "a buffer", -1) ]
 
@@ -22,7 +22,7 @@
         @test collect(E.events(L.State(IOBuffer("	\n\r")))) == [ E.DataContent("	\n\r", true, "a buffer", -1) ]
     end
 
-    @testset "Events/Basic/Data Content" begin
+    @testset "Events/Data Content/Data Content" begin
         @test collect(E.events(L.State(IOBuffer("a"))))   == [ E.DataContent("a", false, "a buffer", -1) ]
         @test collect(E.events(L.State(IOBuffer("ab"))))  == [ E.DataContent("ab", false, "a buffer", -1) ]
         @test collect(E.events(L.State(IOBuffer("abc")))) == [ E.DataContent("abc", false, "a buffer", -1) ]
@@ -32,7 +32,7 @@
         @test collect(E.events(L.State(IOBuffer("aéb")))) == [ E.DataContent("aéb", false, "a buffer", -1) ]
     end
 
-    @testset "Events/Basic/Mixed White Space and Data Content" begin
+    @testset "Events/Data Content/Mixed" begin
         @test collect(E.events(L.State(IOBuffer("a "))))   == [ E.DataContent("a", false, "a buffer", -1),
                                                                 E.DataContent(" ", true, "a buffer", -1) ]
         @test collect(E.events(L.State(IOBuffer(" a"))))   == [ E.DataContent(" ", true, "a buffer", -1),
