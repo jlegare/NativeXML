@@ -98,9 +98,8 @@ struct DataContent
 end
 
 
-struct EntityDeclarationExternal
+struct EntityDeclarationExternalGeneralData
     name                ::String
-    is_parameter        ::Bool
     external_identifier ::Union{Nothing, ExternalIdentifier}
     ndata_declaration   ::Union{Nothing, String}
     identification      ::String
@@ -108,9 +107,32 @@ struct EntityDeclarationExternal
 end
 
 
-struct EntityDeclarationInternal
+struct EntityDeclarationExternalGeneralText
+    name                ::String
+    external_identifier ::Union{Nothing, ExternalIdentifier}
+    identification      ::String
+    line_number         ::Int64
+end
+
+
+struct EntityDeclarationExternalParameter
+    name                ::String
+    external_identifier ::Union{Nothing, ExternalIdentifier}
+    identification      ::String
+    line_number         ::Int64
+end
+
+
+struct EntityDeclarationInternalGeneral
     name           ::String
-    is_parameter   ::Bool
+    entity_value   ::String
+    identification ::String
+    line_number    ::Int64
+end
+
+
+struct EntityDeclarationInternalParameter
+    name           ::String
     entity_value   ::String
     identification ::String
     line_number    ::Int64
@@ -558,14 +580,30 @@ function entity_declaration(mdo, tokens, channel)
             #
         end
 
+        constructor = nothing # Make sure we throw if something goes wrong below.
+
         if entity_value == nothing
-            put!(channel, EntityDeclarationExternal(entity_name.value, is_parameter_entity,
-                                                    external_identifier, ndata_name, Lexical.location_of(entity)...))
+            if is_parameter_entity
+                constructor = (name, location) -> EntityDeclarationExternalParameter(name, external_identifier, location...)
+
+            elseif ndata_name
+                constructor = (name, location) -> EntityDeclarationExternalGeneralData(name, external_identifier,
+                                                                                       ndata_name, location...)
+
+            else
+                constructor = (name, location) -> EntityDeclarationExternalGeneralText(name, external_identifier, location...)
+            end
 
         else
-            put!(channel, EntityDeclarationInternal(entity_name.value, is_parameter_entity, entity_value,
-                                                    Lexical.location_of(entity)...))
+            if is_parameter_entity
+                constructor = (name, location) -> EntityDeclarationInternalParameter(name, entity_value, location...)
+
+            else
+                constructor = (name, location) -> EntityDeclarationInternalGeneral(name, entity_value, location...)
+            end
         end
+
+        put!(channel, constructor(entity_name.value, Lexical.location_of(entity)))
 
     else
         put!(channel, MarkupError("ERROR: Expecting an entity name.", [ mdo, entity ], Lexical.location_of(entity)...))
