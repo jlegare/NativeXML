@@ -26,75 +26,64 @@ import .Lexical
 struct ExternalIdentifier
     public_identifier ::Union{Nothing, String}
     system_identifier ::Union{Nothing, String}
-    identification ::String
-    line_number    ::Int64
+    location          ::Lexical.Location
 end
 
 
 struct CDATAMarkedSectionStart
-    identification ::String
-    line_number    ::Int64
+    location ::Lexical.Location
 end
 
 
 struct CDATAMarkedSectionEnd
-    is_recovery    ::Bool
-    identification ::String
-    line_number    ::Int64
+    is_recovery ::Bool
+    location    ::Lexical.Location
 end
 
 
 struct CharacterReference
-    value          ::String # It's someone else's job to verify that the value is a legitimate character.
-    identification ::String
-    line_number    ::Int64
+    value    ::String # It's someone else's job to verify that the value is a legitimate character.
+    location ::Lexical.Location
 end
 
 
 struct CommentStart
-    identification ::String
-    line_number    ::Int64
+    location ::Lexical.Location
 end
 
 
 struct CommentEnd
-    is_recovery    ::Bool
-    identification ::String
-    line_number    ::Int64
+    is_recovery ::Bool
+    location    ::Lexical.Location
 end
 
 
 struct DTDEnd
-    identification ::String
-    line_number    ::Int64
+    location ::Lexical.Location
 end
 
 
 struct DTDStart
     root                ::String
     external_identifier ::Union{Nothing, ExternalIdentifier}
-    identification      ::String
-    line_number         ::Int64
+    location            ::Lexical.Location
 end
 
 
 struct DTDInternalEnd
-    identification ::String
-    line_number    ::Int64
+    location ::Lexical.Location
 end
 
 
 struct DTDInternalStart
-    identification ::String
-    line_number    ::Int64
+    location ::Lexical.Location
 end
 
 
 struct DataContent
-    value          ::String
-    is_ws          ::Bool
-    identification ::String
-    line_number    ::Int64
+    value    ::String
+    is_ws    ::Bool
+    location ::Lexical.Location
 end
 
 
@@ -102,112 +91,97 @@ struct EntityDeclarationExternalGeneralData
     name                ::String
     external_identifier ::Union{Nothing, ExternalIdentifier}
     ndata_declaration   ::Union{Nothing, String}
-    identification      ::String
-    line_number         ::Int64
+    location            ::Lexical.Location
 end
 
 
 struct EntityDeclarationExternalGeneralText
     name                ::String
     external_identifier ::Union{Nothing, ExternalIdentifier}
-    identification      ::String
-    line_number         ::Int64
+    location            ::Lexical.Location
 end
 
 
 struct EntityDeclarationExternalParameter
     name                ::String
     external_identifier ::Union{Nothing, ExternalIdentifier}
-    identification      ::String
-    line_number         ::Int64
+    location            ::Lexical.Location
 end
 
 
 struct EntityDeclarationInternalGeneral
-    name           ::String
-    entity_value   ::String
-    identification ::String
-    line_number    ::Int64
+    name         ::String
+    entity_value ::String
+    location     ::Lexical.Location
 end
 
 
 struct EntityDeclarationInternalParameter
-    name           ::String
-    entity_value   ::String
-    identification ::String
-    line_number    ::Int64
+    name         ::String
+    entity_value ::String
+    location     ::Lexical.Location
 end
 
 
 struct EntityReferenceGeneral
-    name           ::String
-    identification ::String
-    line_number    ::Int64
+    name     ::String
+    location ::Lexical.Location
 end
 
 
 struct EntityReferenceParameter
-    name           ::String
-    identification ::String
-    line_number    ::Int64
+    name     ::String
+    location ::Lexical.Location
 end
 
 
 struct ProcessingInstruction
-    target         ::String # It's someone else's job to verify that this isn't some case variant of "XML".
-    value          ::String
-    identification ::String
-    line_number    ::Int64
+    target   ::String # It's someone else's job to verify that this isn't some case variant of "XML".
+    value    ::String
+    location ::Lexical.Location
 end
 
 
 struct MarkupError
-    message        ::String # I'll eventually do something more sophisticated here.
-    discarded      ::Array{Lexical.Token, 1}
-    identification ::String
-    line_number    ::Int64
+    message   ::String # I'll eventually do something more sophisticated here.
+    discarded ::Array{Lexical.Token, 1}
+    location  ::Lexical.Location
 end
 
 
 struct AttributeSpecification
-    name           ::String
-    value          ::Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter, MarkupError}, 1}
-    identification ::String
-    line_number    ::Int64
+    name     ::String
+    value    ::Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter, MarkupError}, 1}
+    location ::Lexical.Location
 end
 
 
 struct ElementEnd
-    is_recovery    ::Bool
-    name           ::String
-    identification ::String
-    line_number    ::Int64
+    is_recovery ::Bool
+    name        ::String
+    location    ::Lexical.Location
 end
 
 
 struct ElementStart
-    is_recovery    ::Bool
-    is_empty       ::Bool
-    name           ::String
-    attributes     ::Array{AttributeSpecification, 1}
-    identification ::String
-    line_number    ::Int64
+    is_recovery ::Bool
+    is_empty    ::Bool
+    name        ::String
+    attributes  ::Array{AttributeSpecification, 1}
+    location    ::Lexical.Location
 end
 
 # ----------------------------------------
 # FUNCTIONS
 # ----------------------------------------
 
-CommentEnd(identification, line_number) = CommentEnd(false, identification, line_number)
-CDATAMarkedSectionEnd(identification, line_number) = CDATAMarkedSectionEnd(false, identification, line_number)
-ElementEnd(name, identification, line_number) = ElementEnd(false, name, identification, line_number)
-ElementStart(name, attributes, identification, line_number) = ElementStart(false, name, attributes, identification, line_number)
-ElementStart(is_empty, name, attributes, identification, line_number) = ElementStart(false, is_empty, name, attributes,
-                                                                                     identification, line_number)
-
-DataContent(tokens::Array, identification, line_number) = DataContent(join(map(token -> token.value, tokens), ""),
-                                                                      identification, line_number)
-DataContent(value, identification, line_number) = DataContent(value, false, identification, line_number)
+CommentEnd(location) = CommentEnd(false, location)
+CDATAMarkedSectionEnd(location) = CDATAMarkedSectionEnd(false, location)
+ElementEnd(name, location) = ElementEnd(false, name, location)
+ElementStart(name, attributes, location) = ElementStart(false, name, attributes, location)
+ElementStart(is_empty, name, attributes, location) = ElementStart(false, is_empty, name, attributes, location)
+DataContent(tokens::Array, location) = DataContent(join(map(token -> token.value, tokens), ""), location)
+DataContent(value, location) = DataContent(value, false, location)
 
 is_eoi(tokens) = !isopen(tokens) & !isready(tokens)
 
@@ -215,27 +189,24 @@ is_eoi(tokens) = !isopen(tokens) & !isready(tokens)
 # These are needed for writing tests, because these types contain other structs inside an array.
 #
 function Base.:(==)(left::MarkupError, right::MarkupError)
-    return (left.message           == right.message
-            && left.discarded      == right.discarded
-            && left.identification == right.identification
-            && left.line_number    == right.line_number)
+    return (left.message      == right.message
+            && left.discarded == right.discarded
+            && left.location  == right.location)
 end
 
 
 function Base.:(==)(left::ElementStart, right::ElementStart)
-    return (left.is_recovery       == right.is_recovery
-            && left.name           == right.name
-            && left.attributes     == right.attributes
-            && left.identification == right.identification
-            && left.line_number    == right.line_number)
+    return (left.is_recovery   == right.is_recovery
+            && left.name       == right.name
+            && left.attributes == right.attributes
+            && left.location   == right.location)
 end
 
 
 function Base.:(==)(left::AttributeSpecification, right::AttributeSpecification)
-    return (left.name              == right.name
-            && left.value          == right.value
-            && left.identification == right.identification
-            && left.line_number    == right.line_number)
+    return (left.name        == right.name
+            && left.value    == right.value
+            && left.location == right.location)
 end
 
 
@@ -248,7 +219,7 @@ function cdata_marked_section(mdo, tokens, channel)
         if is_token(Lexical.dso, tokens)
             take!(tokens)
 
-            put!(channel, CDATAMarkedSectionStart(Lexical.location_of(mdo)...))
+            put!(channel, CDATAMarkedSectionStart(Lexical.location_of(mdo)))
 
             consumed = Array{Lexical.Token, 1}()
 
@@ -258,23 +229,23 @@ function cdata_marked_section(mdo, tokens, channel)
 
                     if is_token(Lexical.tagc, tokens)
                         take!(tokens)
-                        put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]...))
-                        put!(channel, CDATAMarkedSectionEnd(Lexical.location_of(msc)...))
+                        put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]))
+                        put!(channel, CDATAMarkedSectionEnd(Lexical.location_of(msc)))
                         break
 
                     else
-                        put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]...))
+                        put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]))
                         put!(channel, MarkupError("ERROR: Expecting '>' to end a CDATA marked section.", [ ],
-                                                  Lexical.location_of(msc)...))
-                        put!(channel, CDATAMarkedSectionEnd(true, Lexical.location_of(msc)...))
+                                                  Lexical.location_of(msc)))
+                        put!(channel, CDATAMarkedSectionEnd(true, Lexical.location_of(msc)))
                         break
                     end
 
                 elseif is_eoi(tokens)
-                    put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]...))
+                    put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]))
                     put!(channel, MarkupError("ERROR: Expecting ']]>' to end a CDATA marked section.", [ ],
-                                              locations_of(mdo, consumed)[:tail]...))
-                    put!(channel, CDATAMarkedSectionEnd(true, locations_of(mdo, consumed)[:tail]...))
+                                              locations_of(mdo, consumed)[:tail]))
+                    put!(channel, CDATAMarkedSectionEnd(true, locations_of(mdo, consumed)[:tail]))
                     break
 
                 else
@@ -284,12 +255,12 @@ function cdata_marked_section(mdo, tokens, channel)
 
         else
             put!(channel, MarkupError("ERROR: Expecting '[' to open a CDATA marked section.", [ mdo, dso, text ],
-                                      Lexical.location_of(text)...))
+                                      Lexical.location_of(text)))
         end
 
     else
         put!(channel, MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],
-                                  Lexical.location_of(dso)...))
+                                  Lexical.location_of(dso)))
     end
 end
 
@@ -307,10 +278,10 @@ function collect_attributes(tokens)
             collect_attribute_value(vi, value, tokens)
 
         else
-            push!(value, MarkupError("ERROR: Expecting '=' after an attribute name.", [ ], Lexical.location_of(name)...))
+            push!(value, MarkupError("ERROR: Expecting '=' after an attribute name.", [ ], Lexical.location_of(name)))
         end
 
-        return AttributeSpecification(name.value, value, Lexical.location_of(name)...)
+        return AttributeSpecification(name.value, value, Lexical.location_of(name))
     end
 
     function collect_attribute_value(vi, value, tokens)
@@ -320,7 +291,7 @@ function collect_attributes(tokens)
             while true
                 if is_eoi(tokens)
                     push!(value, MarkupError("ERROR: Expecting the remainder of an attribute value.", [ ],
-                                             Lexical.location_of(vi)...))
+                                             Lexical.location_of(vi)))
                     break
 
                 elseif fetch(tokens).token_type == delimiter.token_type
@@ -336,20 +307,20 @@ function collect_attributes(tokens)
                 elseif is_token(Lexical.stago, tokens)
                     stago = take!(tokens)
                     push!(value, MarkupError("ERROR: A '<' must be escaped inside an attribute value.", [ stago ],
-                                             Lexical.location_of(stago)...))
+                                             Lexical.location_of(stago)))
 
                 elseif is_token(Lexical.ws, tokens)
                     ws = take!(tokens)
-                    push!(value, DataContent(ws.value, true, Lexical.location_of(ws)...))
+                    push!(value, DataContent(ws.value, true, Lexical.location_of(ws)))
 
                 else
                     data_content = take!(tokens)
-                    push!(value, DataContent(data_content.value, Lexical.location_of(data_content)...))
+                    push!(value, DataContent(data_content.value, Lexical.location_of(data_content)))
                 end
             end
 
         else
-            push!(value, MarkupError("ERROR: Expecting a quoted attribute value after '='.", [ ], Lexical.location_of(vi)...))
+            push!(value, MarkupError("ERROR: Expecting a quoted attribute value after '='.", [ ], Lexical.location_of(vi)))
         end
     end
 
@@ -381,7 +352,7 @@ function comment(mdo, tokens, channel)
 
     consumed = Array{Lexical.Token, 1}()
 
-    put!(channel, CommentStart(Lexical.location_of(mdo)...))
+    put!(channel, CommentStart(Lexical.location_of(mdo)))
 
     while true
         if is_token(Lexical.com, tokens)
@@ -389,28 +360,28 @@ function comment(mdo, tokens, channel)
 
             if is_token(Lexical.tagc, tokens)
                 take!(tokens)
-                put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]...))
-                put!(channel, CommentEnd(Lexical.location_of(com)...))
+                put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]))
+                put!(channel, CommentEnd(Lexical.location_of(com)))
                 break
 
             elseif is_eoi(tokens)
-                put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]...))
-                put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], locations_of(com, consumed)[:tail]...))
-                put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]...))
+                put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]))
+                put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], locations_of(com, consumed)[:tail]))
+                put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]))
                 break
 
             else
-                put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]...))
+                put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]))
                 put!(channel, MarkupError("ERROR: '--' is not allowed inside a comment.", [ ],
-                                          locations_of(com, consumed)[:tail]...))
-                put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]...))
+                                          locations_of(com, consumed)[:tail]))
+                put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]))
                 break
             end
 
         elseif is_eoi(tokens)
-            put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]...))
-            put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], locations_of(com, consumed)[:tail]...))
-            put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]...))
+            put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]))
+            put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], locations_of(com, consumed)[:tail]))
+            put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]))
             break
 
         else
@@ -438,21 +409,21 @@ function document_type_declaration(mdo, tokens, channel)
         consume_white_space!(tokens)
         if is_token(Lexical.tagc, tokens)
             tagc = take!(tokens)
-            put!(channel, DTDStart(root.value, external_identifier, Lexical.location_of(doctype)...))
-            put!(channel, DTDEnd(Lexical.location_of(doctype)...))
+            put!(channel, DTDStart(root.value, external_identifier, Lexical.location_of(doctype)))
+            put!(channel, DTDEnd(Lexical.location_of(doctype)))
 
         elseif is_token(Lexical.dso, tokens)
             dso = take!(tokens)
-            put!(channel, DTDStart(root.value, external_identifier, Lexical.location_of(doctype)...))
-            put!(channel, DTDInternalStart(Lexical.location_of(doctype)...))
+            put!(channel, DTDStart(root.value, external_identifier, Lexical.location_of(doctype)))
+            put!(channel, DTDInternalStart(Lexical.location_of(doctype)))
 
         else
             put!(channel, MarkupError("ERROR: Expecting '>' to end a document type declaration.",
-                                      [ mdo, doctype, root ], Lexical.location_of(root)...))
+                                      [ mdo, doctype, root ], Lexical.location_of(root)))
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting a root element name.", [ mdo, doctype ], Lexical.location_of(doctype)...))
+        put!(channel, MarkupError("ERROR: Expecting a root element name.", [ mdo, doctype ], Lexical.location_of(doctype)))
     end
 end
 
@@ -466,15 +437,15 @@ function element_end(tokens, channel)
 
         if is_token(Lexical.tagc, tokens)
             take!(tokens)
-            put!(channel, ElementEnd(name.value, Lexical.location_of(name)...))
+            put!(channel, ElementEnd(name.value, Lexical.location_of(name)))
 
         else
-            put!(channel, MarkupError("ERROR: Expecting '>' to end an element close tag.", [ ], Lexical.location_of(name)...))
-            put!(channel, ElementEnd(true, name.value, Lexical.location_of(name)...))
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an element close tag.", [ ], Lexical.location_of(name)))
+            put!(channel, ElementEnd(true, name.value, Lexical.location_of(name)))
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting an element name.", [ etago ], Lexical.location_of(etago)...))
+        put!(channel, MarkupError("ERROR: Expecting an element name.", [ etago ], Lexical.location_of(etago)))
     end
 end
 
@@ -492,26 +463,27 @@ function element_start(tokens, channel)
             take!(tokens)
             if is_token(Lexical.tagc, tokens)
                 take!(tokens)
-                put!(channel, ElementStart(true, name.value, attributes, Lexical.location_of(name)...))
-                put!(channel, ElementEnd(name.value, Lexical.location_of(name)...))
+                put!(channel, ElementStart(true, name.value, attributes, Lexical.location_of(name)))
+                put!(channel, ElementEnd(name.value, Lexical.location_of(name)))
 
             else
-                put!(channel, ElementStart(true, true, name.value, attributes, Lexical.location_of(name)...))
-                put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ ], Lexical.location_of(name)...))
-                put!(channel, ElementEnd(true, name.value, Lexical.location_of(name)...))
+                put!(channel, ElementStart(true, true, name.value, attributes, Lexical.location_of(name)))
+                put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ ],
+                                          Lexical.location_of(name)))
+                put!(channel, ElementEnd(true, name.value, Lexical.location_of(name)))
             end
 
         elseif is_token(Lexical.tagc, tokens)
             take!(tokens)
-            put!(channel, ElementStart(name.value, attributes, Lexical.location_of(name)...))
+            put!(channel, ElementStart(name.value, attributes, Lexical.location_of(name)))
 
         else
-            put!(channel, ElementStart(true, false, name.value, attributes, Lexical.location_of(name)...))
-            put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ ], Lexical.location_of(name)...))
+            put!(channel, ElementStart(true, false, name.value, attributes, Lexical.location_of(name)))
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ ], Lexical.location_of(name)))
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting an element name.", [ stago ], Lexical.location_of(stago)...))
+        put!(channel, MarkupError("ERROR: Expecting an element name.", [ stago ], Lexical.location_of(stago)))
     end
 end
 
@@ -536,7 +508,8 @@ function entity_declaration(mdo, tokens, channel)
                     return ( external_identifier = external_identifier, entity_value = nothing, ndata_name =  ndata_name.value )
 
                 else
-                    put!(channel, MarkupError("ERROR: Expecting a notation name.", [ ndata ], Lexical.location_of(entity_name)...))
+                    put!(channel, MarkupError("ERROR: Expecting a notation name.", [ ndata ],
+                                              Lexical.location_of(entity_name)))
 
                     return ( external_identifier = external_identifier, entity_value = nothing, ndata_name = nothing )
                 end
@@ -565,7 +538,7 @@ function entity_declaration(mdo, tokens, channel)
 
         if is_parameter_entity && ndata_name != nothing
             put!(channel, MarkupError("ERROR: A parameter entity cannot have a notation.", [ ndata_name ],
-                                      Lexical.location_of(entity_name)...))
+                                      Lexical.location_of(entity_name)))
             ndata_name = nothing
         end
 
@@ -574,7 +547,7 @@ function entity_declaration(mdo, tokens, channel)
 
         else
             put!(channel, MarkupError("ERROR: Expecting '>' to end an entity declaration.", [ ],
-                                      Lexical.location_of(entity_name)...))
+                                      Lexical.location_of(entity_name)))
             # From now on in this branch, we're basically doing error-recovery: better to pretend the entity declaration
             # was properly parsed, otherwise there could be a cascade of errors down the line.
             #
@@ -584,29 +557,29 @@ function entity_declaration(mdo, tokens, channel)
 
         if entity_value == nothing
             if is_parameter_entity
-                constructor = (name, location) -> EntityDeclarationExternalParameter(name, external_identifier, location...)
+                constructor = (name, location) -> EntityDeclarationExternalParameter(name, external_identifier, location)
 
             elseif ndata_name
                 constructor = (name, location) -> EntityDeclarationExternalGeneralData(name, external_identifier,
-                                                                                       ndata_name, location...)
+                                                                                       ndata_name, location)
 
             else
-                constructor = (name, location) -> EntityDeclarationExternalGeneralText(name, external_identifier, location...)
+                constructor = (name, location) -> EntityDeclarationExternalGeneralText(name, external_identifier, location)
             end
 
         else
             if is_parameter_entity
-                constructor = (name, location) -> EntityDeclarationInternalParameter(name, entity_value, location...)
+                constructor = (name, location) -> EntityDeclarationInternalParameter(name, entity_value, location)
 
             else
-                constructor = (name, location) -> EntityDeclarationInternalGeneral(name, entity_value, location...)
+                constructor = (name, location) -> EntityDeclarationInternalGeneral(name, entity_value, location)
             end
         end
 
         put!(channel, constructor(entity_name.value, Lexical.location_of(entity)))
 
     else
-        put!(channel, MarkupError("ERROR: Expecting an entity name.", [ mdo, entity ], Lexical.location_of(entity)...))
+        put!(channel, MarkupError("ERROR: Expecting an entity name.", [ mdo, entity ], Lexical.location_of(entity)))
     end
 end
 
@@ -643,11 +616,11 @@ function events(state::Lexical.State)
             else
                 if is_token(Lexical.ws, tokens)
                     ws = take!(tokens)
-                    push!(channel, DataContent(ws.value, true, Lexical.location_of(ws)...))
+                    push!(channel, DataContent(ws.value, true, Lexical.location_of(ws)))
 
                 else
                     token = take!(tokens)
-                    push!(channel, DataContent(token.value, Lexical.location_of(token)...))
+                    push!(channel, DataContent(token.value, Lexical.location_of(token)))
                 end
             end
         end
@@ -716,7 +689,7 @@ function markup_declaration(tokens, channel)
         entity_declaration(mdo, tokens, channel)
 
     else
-        put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)...))
+        put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
     end
 end
 
@@ -729,15 +702,15 @@ function parameter_entity_reference(tokens, channel)
         if is_token(Lexical.refc, tokens)
             refc = take!(tokens)
 
-            put!(channel, EntityReferenceParameter(name.value, Lexical.location_of(pero)...))
+            put!(channel, EntityReferenceParameter(name.value, Lexical.location_of(pero)))
 
         else
             put!(channel, MarkupError("ERROR: Expecting ';' to end a parameter entity reference.", [ pero, name ],
-                                      Lexical.location_of(name)...))
+                                      Lexical.location_of(name)))
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting a parameter entity name.", [ pero ], Lexical.location_of(pero)...))
+        put!(channel, MarkupError("ERROR: Expecting a parameter entity name.", [ pero ], Lexical.location_of(pero)))
     end
 end
 
@@ -760,13 +733,13 @@ function processing_instruction(tokens, channel)
                     take!(tokens)
 
                     put!(channel, ProcessingInstruction(target.value, join(map(value -> value.value, consumed), ""),
-                                                        Lexical.location_of(pio)...))
+                                                        Lexical.location_of(pio)))
                     break
 
                 elseif is_eoi(tokens)
                     t = vcat(pio, target, consumed)
                     put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
-                                              t, Lexical.location_of(t[end])...))
+                                              t, Lexical.location_of(t[end])))
                     break
 
                 else
@@ -777,15 +750,15 @@ function processing_instruction(tokens, channel)
         elseif is_token(Lexical.pic, tokens)
             take!(tokens)
 
-            put!(channel, ProcessingInstruction(target.value, "", Lexical.location_of(pio)...))
+            put!(channel, ProcessingInstruction(target.value, "", Lexical.location_of(pio)))
 
         else
             put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", [ pio, target ] ,
-                                      Lexical.location_of(target)...))
+                                      Lexical.location_of(target)))
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting a PI target.", [ pio ], Lexical.location_of(pio)...))
+        put!(channel, MarkupError("ERROR: Expecting a PI target.", [ pio ], Lexical.location_of(pio)))
     end
 end
 
@@ -801,14 +774,15 @@ function character_reference(tokens)
         if is_token(Lexical.refc, tokens)
             refc = take!(tokens)
 
-            return CharacterReference(value.value, Lexical.location_of(cro)...)
+            return CharacterReference(value.value, Lexical.location_of(cro))
 
         else
-            return MarkupError("ERROR: Expecting ';' to end a character reference.", [ cro, value ], Lexical.location_of(value)...)
+            return MarkupError("ERROR: Expecting ';' to end a character reference.", [ cro, value ],
+                               Lexical.location_of(value))
         end
 
     else
-        return MarkupError("ERROR: Expecting a character value.", [ cro ], Lexical.location_of(cro)...)
+        return MarkupError("ERROR: Expecting a character value.", [ cro ], Lexical.location_of(cro))
     end
 end
 
@@ -821,18 +795,20 @@ function entity_reference(tokens, in_attribute = false)
         if is_token(Lexical.refc, tokens)
             refc = take!(tokens)
 
-            return EntityReferenceGeneral(name.value, Lexical.location_of(ero)...)
+            return EntityReferenceGeneral(name.value, Lexical.location_of(ero))
 
         else
-            return MarkupError("ERROR: Expecting ';' to end an entity reference.", [ ero, name ], Lexical.location_of(name)...)
+            return MarkupError("ERROR: Expecting ';' to end an entity reference.", [ ero, name ],
+                               Lexical.location_of(name))
         end
 
     else
         if in_attribute
-            return MarkupError("ERROR: A '&' must be escaped inside an attribute value.", [ ero ], Lexical.location_of(ero)...)
+            return MarkupError("ERROR: A '&' must be escaped inside an attribute value.", [ ero ],
+                               Lexical.location_of(ero))
 
         else
-            return MarkupError("ERROR: Expecting an entity name.", [ ero ], Lexical.location_of(ero)...)
+            return MarkupError("ERROR: Expecting an entity name.", [ ero ], Lexical.location_of(ero))
         end
     end
 end
@@ -843,7 +819,7 @@ function collect_external_identifier(mdo, tokens, channel)
         system = take!(tokens)
         system_identifier = stringify(collect_string(Lexical.location_of(system), tokens, channel))
 
-        return ExternalIdentifier(nothing, system_identifier, Lexical.location_of(system)...)
+        return ExternalIdentifier(nothing, system_identifier, Lexical.location_of(system))
 
     elseif is_keyword("PUBLIC", tokens)
         public = take!(tokens)
@@ -861,20 +837,20 @@ function collect_external_identifier(mdo, tokens, channel)
 
                 if system_identifier == nothing
                     put!(channel, MarkupError("ERROR: Expecting a system identifier following a public identifier.",
-                                              [ ], locations_of(mdo, public_identifier)[:tail]...))
+                                              [ ], locations_of(mdo, public_identifier)[:tail]))
 
-                    return ExternalIdentifier(stringify(public_identifier), nothing, Lexical.location_of(public)...)
+                    return ExternalIdentifier(stringify(public_identifier), nothing, Lexical.location_of(public))
 
                 else
                     return ExternalIdentifier(stringify(public_identifier), stringify(system_identifier),
-                                              Lexical.location_of(public)...)
+                                              Lexical.location_of(public))
                 end
 
             else
                 put!(channel, MarkupError("ERROR: Expecting white space following a public identifier.",
-                                          [ ], locations_of(mdo, public_identifier)[:tail]...))
+                                          [ ], locations_of(mdo, public_identifier)[:tail]))
 
-                return ExternalIdentifier(stringify(public_identifier), nothing, Lexical.location_of(public)...)
+                return ExternalIdentifier(stringify(public_identifier), nothing, Lexical.location_of(public))
             end
         end
 
@@ -905,7 +881,7 @@ function collect_string(location, tokens, channel)
         return consumed
 
     else
-        put!(channel, MarkupError("ERROR: Expecting a quoted string.", [ ], location...))
+        put!(channel, MarkupError("ERROR: Expecting a quoted string.", [ ], location))
 
         return nothing
     end

@@ -62,6 +62,11 @@ end
 # TYPE DECLARATIONS
 # ----------------------------------------
 
+struct Location
+   identification ::String
+   line_number    ::Int64
+end
+
 mutable struct State
    io          ::Union{IOStream, IOBuffer}
    line_number ::Int64
@@ -71,10 +76,9 @@ end
 
 
 struct Token
-   token_type     ::TokenType
-   value          ::String
-   identification ::String
-   line_number    ::Int64
+   token_type ::TokenType
+   value      ::String
+   location   ::Location
 end
 
 # ----------------------------------------
@@ -118,8 +122,8 @@ const WhiteSpaces = Set([ '\u20', '\u09', '\u0a', '\u0d' ])
 # ----------------------------------------
 
 State(io) = State(io, -1, nothing, -1)
-Token(token_type::TokenType, token_value::String, state::State) = Token(token_type, token_value, identification_of(state)...)
-location_of(token::Token) = ( token.identification, token.line_number )
+Token(token_type::TokenType, token_value::String, state::State) = Token(token_type, token_value, location_of(state))
+location_of(token::Token) = token.location
 
 
 function consume_last_match(state::State)
@@ -189,11 +193,11 @@ function consume_while(state::State, set::Set{Char})
 end
 
 
-function identification_of(state::State)
+function location_of(state::State)
     name_of(io::IOStream) = io.name
     name_of(io) = "a buffer"
 
-    return ( name_of(state.io), -1 )
+    return Location(name_of(state.io), -1)
 end
 
 
