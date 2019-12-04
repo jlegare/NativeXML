@@ -491,7 +491,7 @@ end
 function entity_declaration(mdo, tokens, channel)
     function collect_entity_definition(entity_name, tokens, channel)
         external_identifier = collect_external_identifier(entity_name, tokens, channel)
-        if external_identifier == nothing
+        if isnothing(external_identifier)
             entity_value = collect_string(Lexical.location_of(entity_name), tokens, channel)
 
             return ( external_identifier = external_identifier, entity_value = stringify(entity_value), ndata_name = nothing )
@@ -536,7 +536,7 @@ function entity_declaration(mdo, tokens, channel)
         ( external_identifier, entity_value, ndata_name ) = collect_entity_definition(entity_name, tokens, channel)
         consume_white_space!(tokens)
 
-        if is_parameter_entity && ndata_name != nothing
+        if is_parameter_entity && !isnothing(ndata_name)
             put!(channel, MarkupError("ERROR: A parameter entity cannot have a notation.", [ ndata_name ],
                                       Lexical.location_of(entity_name)))
             ndata_name = nothing
@@ -555,7 +555,7 @@ function entity_declaration(mdo, tokens, channel)
 
         constructor = nothing # Make sure we throw if something goes wrong below.
 
-        if entity_value == nothing
+        if isnothing(entity_value)
             if is_parameter_entity
                 constructor = (name, location) -> EntityDeclarationExternalParameter(name, external_identifier, location)
 
@@ -824,7 +824,7 @@ function collect_external_identifier(mdo, tokens, channel)
     elseif is_keyword("PUBLIC", tokens)
         public = take!(tokens)
         public_identifier = collect_string(Lexical.location_of(public), tokens, channel)
-        if public_identifier == nothing
+        if isnothing(public_identifier)
             # Something is funky. Don't bother trying to parse the system identifier.
             #
             return nothing
@@ -835,7 +835,7 @@ function collect_external_identifier(mdo, tokens, channel)
                               # required, which seems kind of lame off hand, but so be it.
                 system_identifier = collect_string(locations_of(mdo, public_identifier)[:tail], tokens, channel)
 
-                if system_identifier == nothing
+                if isnothing(system_identifier)
                     put!(channel, MarkupError("ERROR: Expecting a system identifier following a public identifier.",
                                               [ ], locations_of(mdo, public_identifier)[:tail]))
 
