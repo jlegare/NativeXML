@@ -494,7 +494,14 @@ function entity_declaration(mdo, tokens, channel)
         if isnothing(external_identifier)
             entity_value = collect_string(Lexical.location_of(entity_name), tokens, channel)
 
-            return ( external_identifier = external_identifier, entity_value = stringify(entity_value), ndata_name = nothing )
+            if isnothing(entity_value)
+                # Something is messed up.
+                #
+                return ( external_identifier = nothing, entity_value = nothing, ndata_name = nothing )
+
+            else
+                return ( external_identifier = external_identifier, entity_value = stringify(entity_value), ndata_name = nothing )
+            end
 
         else
             consume_white_space!(tokens)
@@ -559,7 +566,7 @@ function entity_declaration(mdo, tokens, channel)
             if is_parameter_entity
                 constructor = (name, location) -> EntityDeclarationExternalParameter(name, external_identifier, location)
 
-            elseif ndata_name
+            elseif isnothing(ndata_name)
                 constructor = (name, location) -> EntityDeclarationExternalGeneralData(name, external_identifier,
                                                                                        ndata_name, location)
 
