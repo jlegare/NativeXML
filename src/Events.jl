@@ -567,11 +567,11 @@ function entity_declaration(mdo, tokens, channel)
                 constructor = (name, location) -> EntityDeclarationExternalParameter(name, external_identifier, location)
 
             elseif isnothing(ndata_name)
-                constructor = (name, location) -> EntityDeclarationExternalGeneralData(name, external_identifier,
-                                                                                       ndata_name, location)
+                constructor = (name, location) -> EntityDeclarationExternalGeneralText(name, external_identifier, location)
 
             else
-                constructor = (name, location) -> EntityDeclarationExternalGeneralText(name, external_identifier, location)
+                constructor = (name, location) -> EntityDeclarationExternalGeneralData(name, external_identifier,
+                                                                                       ndata_name, location)
             end
 
         else
