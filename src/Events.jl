@@ -817,9 +817,16 @@ end
 function collect_external_identifier(mdo, tokens, channel)
     if is_keyword("SYSTEM", tokens)
         system = take!(tokens)
-        system_identifier = stringify(collect_string(Lexical.location_of(system), tokens, channel))
+        system_identifier = collect_string(Lexical.location_of(system), tokens, channel)
 
-        return ExternalIdentifier(nothing, system_identifier, Lexical.location_of(system))
+        if isnothing(system_identifier)
+            # There's something funky going on.
+            #
+            return nothing
+
+        else
+            return ExternalIdentifier(nothing, stringify(system_identifier), Lexical.location_of(system))
+        end
 
     elseif is_keyword("PUBLIC", tokens)
         public = take!(tokens)
