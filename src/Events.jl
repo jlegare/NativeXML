@@ -682,13 +682,50 @@ function markup_declaration(tokens, channel)
     elseif is_token(Lexical.com, tokens)
         comment(mdo, tokens, channel)
 
+    elseif is_keyword("ATTLIST", tokens)
+        # This is temporary until I write the attribute declaration parser.
+        #
+        put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
+
     elseif is_keyword("DOCTYPE", tokens)
         document_type_declaration(mdo, tokens, channel)
+
+    elseif is_keyword("ELEMENT", tokens)
+        # This is temporary until I write the element declaration parser.
+        #
+        put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
 
     elseif is_keyword("ENTITY", tokens)
         entity_declaration(mdo, tokens, channel)
 
+    elseif is_keyword("NOTATION", tokens)
+        # This is temporary until I write the element declaration parser.
+        #
+        put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
+
     else
+        if is_keyword("attlist", tokens)
+            put!(channel, MarkupError("ERROR: The keyword 'attlist' must be uppercased.", [ ], Lexical.location_of(mdo)))
+
+        elseif is_keyword("doctype", tokens)
+            # Emit an error, but keep going: we might be able to make sense of this.
+            #
+            put!(channel, MarkupError("ERROR: The keyword 'doctype' must be uppercased.", [ ], Lexical.location_of(mdo)))
+            document_type_declaration(mdo, tokens, channel)
+
+        elseif is_keyword("element", tokens)
+            put!(channel, MarkupError("ERROR: The keyword 'element' must be uppercased.", [ ], Lexical.location_of(mdo)))
+
+        elseif is_keyword("entity", tokens)
+            # Emit an error, but keep going: we might be able to make sense of this.
+            #
+            put!(channel, MarkupError("ERROR: The keyword 'entity' must be uppercased.", [ ], Lexical.location_of(mdo)))
+            entity_declaration(mdo, tokens, channel)
+
+        elseif is_keyword("notation", tokens)
+            put!(channel, MarkupError("ERROR: The keyword 'notation' must be uppercased.", [ ], Lexical.location_of(mdo)))
+        end
+
         put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
     end
 end

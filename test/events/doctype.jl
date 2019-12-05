@@ -218,7 +218,7 @@
         #
         events = evaluate("<!DOCTYPE root PUBLIC \"'salut.dtd'\"\"'hello.dtd'\">")
         @test length(events) == 3
-        @test (events[1] == E.MarkupError("ERROR: Expecting white space following a public identifier.", 
+        @test (events[1] == E.MarkupError("ERROR: Expecting white space following a public identifier.",
                                           [ ], L.Location("a buffer", -1)))
         @test (events[2] == E.DTDStart("root", E.ExternalIdentifier("'salut.dtd'", "'hello.dtd'", L.Location("a buffer", -1)),
                                        L.Location("a buffer", -1)))
@@ -233,7 +233,7 @@
         events = evaluate("<!DOCTYPE root PUBLIC \"'salut.dtd'\" >")
         @test length(events) > 2
         @test events[1] == E.MarkupError("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1))
-        @test events[2] == E.MarkupError("ERROR: Expecting a system identifier following a public identifier.", 
+        @test events[2] == E.MarkupError("ERROR: Expecting a system identifier following a public identifier.",
                                          [ ], L.Location("a buffer", -1))
     end
 end
