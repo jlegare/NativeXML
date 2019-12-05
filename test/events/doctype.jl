@@ -139,5 +139,32 @@
                                               [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                                                 L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ],
                                               L.Location("a buffer", -1)))
+
+    end
+
+    @testset "Events/Document Type Declaration (Negative ... missing TAGC.)" begin
+        events = evaluate("<!DOCTYPE root")
+        @test length(events) == 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting '>' to end a document type declaration.",
+                                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
+                                                L.Token(L.text, "root", L.Location("a buffer", -1)) ],
+                                              L.Location("a buffer", -1)))
+
+        events = evaluate("<!DOCTYPE root SYSTEM \"'hello.dtd'\"")
+        @test length(events) == 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting '>' to end a document type declaration.",
+                                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
+                                                L.Token(L.text, "root", L.Location("a buffer", -1)) ],
+                                              L.Location("a buffer", -1)))
+
+        events = evaluate("<!DOCTYPE root PUBLIC \"'salut.dtd'\" \"'hello.dtd'\"")
+        @test length(events) == 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting '>' to end a document type declaration.",
+                                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
+                                                L.Token(L.text, "root", L.Location("a buffer", -1)) ],
+                                              L.Location("a buffer", -1)))
     end
 end
