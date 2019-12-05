@@ -211,4 +211,11 @@
         @test length(events) > 1
         @test (first(events) == E.MarkupError("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)))
     end
+
+    @testset "Events/Document Type Declaration (Negative ... missing white space between public and system identifier.)" begin
+        events = evaluate("<!DOCTYPE root PUBLIC \"'salut.dtd'\"\"'hello.dtd'\">")
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting white space following a public identifier.", 
+                                              [ ], L.Location("a buffer", -1)))
+    end
 end
