@@ -84,13 +84,15 @@
         # Look for the remaining SGML keywords.
         #
         events = evaluate("<!shortref")
-        @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
-                                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test length(events) > 2
+        @test (events[1] == E.MarkupError("ERROR: The keyword 'shortref' is not available in XML.", [ ], L.Location("a buffer", -1)))
+        @test (events[2] == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
 
         events = evaluate("<!usemap")
-        @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
-                                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test length(events) > 2
+        @test (events[1] == E.MarkupError("ERROR: The keyword 'usemap' is not available in XML.", [ ], L.Location("a buffer", -1)))
+        @test (events[2] == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
     end
 end
