@@ -840,24 +840,22 @@ function collect_external_identifier(mdo, tokens, channel)
             if is_token(Lexical.ws, tokens)
                 take!(tokens) # Don't bother holding on to this one. See [1], § 4.2.2 ... the white space is
                               # required, which seems kind of lame off hand, but so be it.
-                system_identifier = collect_string(locations_of(mdo, public_identifier)[:tail], tokens, channel)
-
-                if isnothing(system_identifier)
-                    put!(channel, MarkupError("ERROR: Expecting a system identifier following a public identifier.",
-                                              [ ], locations_of(mdo, public_identifier)[:tail]))
-
-                    return ExternalIdentifier(stringify(public_identifier), nothing, Lexical.location_of(public))
-
-                else
-                    return ExternalIdentifier(stringify(public_identifier), stringify(system_identifier),
-                                              Lexical.location_of(public))
-                end
 
             else
                 put!(channel, MarkupError("ERROR: Expecting white space following a public identifier.",
                                           [ ], locations_of(mdo, public_identifier)[:tail]))
+            end
+
+            system_identifier = collect_string(locations_of(mdo, public_identifier)[:tail], tokens, channel)
+
+            if isnothing(system_identifier)
+                put!(channel, MarkupError("ERROR: Expecting a system identifier following a public identifier.",
+                                          [ ], locations_of(mdo, public_identifier)[:tail]))
 
                 return ExternalIdentifier(stringify(public_identifier), nothing, Lexical.location_of(public))
+
+            else
+                return ExternalIdentifier(stringify(public_identifier), stringify(system_identifier), Lexical.location_of(public))
             end
         end
 

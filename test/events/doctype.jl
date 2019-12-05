@@ -217,9 +217,12 @@
         # we're testing the results of some other part of the parser.)
         #
         events = evaluate("<!DOCTYPE root PUBLIC \"'salut.dtd'\"\"'hello.dtd'\">")
-        @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting white space following a public identifier.", 
-                                              [ ], L.Location("a buffer", -1)))
+        @test length(events) == 3
+        @test (events[1] == E.MarkupError("ERROR: Expecting white space following a public identifier.", 
+                                          [ ], L.Location("a buffer", -1)))
+        @test (events[2] == E.DTDStart("root", E.ExternalIdentifier("'salut.dtd'", "'hello.dtd'", L.Location("a buffer", -1)),
+                                       L.Location("a buffer", -1)))
+        @test (events[3] == E.DTDEnd(L.Location("a buffer", -1)))
     end
 
     @testset "Events/Document Type Declaration (Negative ... missing system identifier following public identifier.)" begin
