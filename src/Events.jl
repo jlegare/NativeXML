@@ -512,7 +512,7 @@ function entity_declaration(mdo, tokens, channel)
                 if is_token(Lexical.text, tokens)
                     ndata_name = take!(tokens)
 
-                    return ( external_identifier = external_identifier, entity_value = nothing, ndata_name =  ndata_name.value )
+                    return ( external_identifier = external_identifier, entity_value = nothing, ndata_name =  ndata_name )
 
                 else
                     put!(channel, MarkupError("ERROR: Expecting a notation name.", [ ndata ],
@@ -571,7 +571,7 @@ function entity_declaration(mdo, tokens, channel)
 
             else
                 constructor = (name, location) -> EntityDeclarationExternalGeneralData(name, external_identifier,
-                                                                                       ndata_name, location)
+                                                                                       ndata_name.value, location)
             end
 
         else

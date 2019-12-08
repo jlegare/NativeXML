@@ -5,7 +5,7 @@
     L = Events.Lexical
 
     function ExternalGeneralData(name, public_id, system_id, notation, location)
-        return E.EntityDeclarationExternalGeneralData(name, E.ExternalIdentifier(public_id, system_id, location), 
+        return E.EntityDeclarationExternalGeneralData(name, E.ExternalIdentifier(public_id, system_id, location),
                                                       notation, location)
     end
 
@@ -347,6 +347,17 @@
                                       L.Location("a buffer", -1)) ])
     end
 
+    @testset "Events/Entity Declarations, External Parameter (Negative ... attempted notation specification)" begin
+        # Be careful with some of these tests ... the parser keeps going, so we only check the FIRST event. (Otherwise
+        # we're testing the results of some other part of the parser.)
+        #
+        events = evaluate("<!ENTITY % a PUBLIC \"hello.ent\" \"salut.ent\" NDATA notation>")
+        @test length(events) > 1
+        @test first(events) == E.MarkupError("ERROR: A parameter entity cannot have a notation.",
+                                              [ L.Token(L.text, "notation", L.Location("a buffer", -1)) ],
+                                              L.Location("a buffer", -1))
+    end
+
     @testset "Events/Entity Declarations, External Data (Positive)" begin
         # Basic tests ... fixed entity name, fixed public/system identifier, with notation specification.
         #
@@ -373,5 +384,46 @@
 
         @test (evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA\na\t>")
                == [ ExternalGeneralData("e", "hello.ent", "salut.ent", "a", L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Entity Declarations, External Data (Negative ... invalid or absent notation name)" begin
+        # Be careful with some of these tests ... the parser keeps going, so we only check the FIRST event. (Otherwise
+        # we're testing the results of some other part of the parser.)
+        #
+        events = evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA")
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a notation name.",
+                                              [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ],
+                                              L.Location("a buffer", -1)))
+
+        events = evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA>")
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a notation name.",
+                                              [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ],
+                                              L.Location("a buffer", -1)))
+
+        events = evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA >")
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a notation name.",
+                                              [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ],
+                                              L.Location("a buffer", -1)))
+
+        events = evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA \"notation\">")
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a notation name.",
+                                              [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ],
+                                              L.Location("a buffer", -1)))
+
+        events = evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA \'notation\'>")
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a notation name.",
+                                              [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ],
+                                              L.Location("a buffer", -1)))
+
+        events = evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA <")
+        @test length(events) > 1
+        @test (first(events) == E.MarkupError("ERROR: Expecting a notation name.",
+                                              [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ],
+                                              L.Location("a buffer", -1)))
     end
 end
