@@ -83,17 +83,14 @@
                                                                 L.Token(L.ws, " ", L.Location("a buffer", -1)) ],
                                                               L.Location("a buffer", -1)) ])
 
-        # Check that a random token is caught. But careful ... the parser keeps going, so we only check the FIRST
-        # event. (Otherwise we're testing the results of some other part of the parser.)
+        # Check that a random token is caught. Note the random token goes into the PI value.
         #
         events = evaluate("<?target<")
-        @test length(events) > 1
+        @test length(events) == 1
         @test (first(events) == E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
                                               [ L.Token(L.pio, "<?", L.Location("a buffer", -1)),
-                                                L.Token(L.text, "target", L.Location("a buffer", -1)) ],
+                                                L.Token(L.text, "target", L.Location("a buffer", -1)),
+                                                L.Token(L.stago, "<", L.Location("a buffer", -1)) ],
                                               L.Location("a buffer", -1)))
-
-        # We can't write an equivalent test with a PI value, because anything that appears after the first white space
-        # (except '?>') belongs in the PI value.
     end
 end

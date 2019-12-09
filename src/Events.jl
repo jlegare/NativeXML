@@ -211,7 +211,7 @@ end
 
 
 function cdata_marked_section(mdo, tokens, channel)
-    dso = take!(tokens)
+    dso = take!(tokens) # Consume the DSO that got us here.
 
     if is_keyword("CDATA", tokens)
         text = take!(tokens) # Consume the CDATA keyword.
@@ -267,8 +267,8 @@ end
 
 function collect_attributes(tokens)
     function collect_attribute(tokens)
-        name = take!(tokens) # Collect the attribute name token that got us here.
-        consume_white_space!(tokens)
+        name = take!(tokens)         # Collect the attribute name token that got us here ...
+        consume_white_space!(tokens) # ... but discard any following white space.
 
         value = Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter, MarkupError}, 1}()
 
@@ -348,7 +348,7 @@ end
 
 
 function comment(mdo, tokens, channel)
-    com = take!(tokens)
+    com = take!(tokens) # Consume the COM token that got us here.
 
     consumed = Array{Lexical.Token, 1}()
 
@@ -399,8 +399,8 @@ end
 
 
 function document_type_declaration(mdo, tokens, channel)
-    doctype = take!(tokens)
-    consume_white_space!(tokens)
+    doctype = take!(tokens)      # Consume the DOCTYPE keyword that got us here ...
+    consume_white_space!(tokens) # ... but discard any following white space.
 
     if is_token(Lexical.text, tokens)
         root = take!(tokens)
@@ -506,8 +506,8 @@ function entity_declaration(mdo, tokens, channel)
         else
             consume_white_space!(tokens)
             if is_keyword("NDATA", tokens)
-                ndata = take!(tokens) # Consume the NDATA keyword.
-                consume_white_space!(tokens)
+                ndata = take!(tokens)        # Consume the NDATA keyword ... 
+                consume_white_space!(tokens) # ... but discard any following white space.
 
                 if is_token(Lexical.text, tokens)
                     ndata_name = take!(tokens)
@@ -528,8 +528,8 @@ function entity_declaration(mdo, tokens, channel)
     end
 
 
-    entity = take!(tokens)
-    consume_white_space!(tokens)
+    entity = take!(tokens)       # Consume the ENTITY keyword that got us here ...
+    consume_white_space!(tokens) # ... but discard any following white space.
 
     is_parameter_entity = is_token(Lexical.pero, tokens)
     if is_parameter_entity
@@ -772,39 +772,28 @@ function processing_instruction(tokens, channel)
         target = take!(tokens) # See [1], § 2.6 ... the PI target is required. Technically, we should exclude all case
                                # variants of "XML" from the PI target, but let's leave that to another layer for now.
 
-        if is_token(Lexical.ws, tokens)
-            take!(tokens) # Don't bother holding on to this one. Again, see [1], § 2.6 ... the white space is required,
-                          # so it's syntax and doesn't belong in the PI value.
+        consume_white_space!(tokens) # Discard any white space. Again, see [1], § 2.6 ... the white space is required,
+                                     # so it's syntax and doesn't belong in the PI value.
 
-            consumed = Array{Lexical.Token, 1}()
+        consumed = Array{Lexical.Token, 1}()
 
-            while true
-                if is_token(Lexical.pic, tokens)
-                    take!(tokens)
+        while true
+            if is_token(Lexical.pic, tokens)
+                take!(tokens)
 
-                    put!(channel, ProcessingInstruction(target.value, join(map(value -> value.value, consumed), ""),
-                                                        Lexical.location_of(pio)))
-                    break
+                put!(channel, ProcessingInstruction(target.value, join(map(value -> value.value, consumed), ""),
+                                                    Lexical.location_of(pio)))
+                break
 
-                elseif is_eoi(tokens)
-                    t = vcat(pio, target, consumed)
-                    put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
-                                              t, Lexical.location_of(t[end])))
-                    break
+            elseif is_eoi(tokens)
+                t = vcat(pio, target, consumed)
+                put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
+                                          t, Lexical.location_of(t[end])))
+                break
 
-                else
-                    push!(consumed, take!(tokens))
-                end
+            else
+                push!(consumed, take!(tokens))
             end
-
-        elseif is_token(Lexical.pic, tokens)
-            take!(tokens)
-
-            put!(channel, ProcessingInstruction(target.value, "", Lexical.location_of(pio)))
-
-        else
-            put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", [ pio, target ] ,
-                                      Lexical.location_of(target)))
         end
 
     else
