@@ -553,7 +553,7 @@ function entity_declaration(mdo, tokens, channel)
             tagc = take!(tokens)
 
         else
-            put!(channel, MarkupError("ERROR: Expecting '>' to end an entity declaration.", [ ],
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an entity declaration.", [ mdo, entity ],
                                       Lexical.location_of(entity_name)))
             # From now on in this branch, we're basically doing error-recovery: better to pretend the entity declaration
             # was properly parsed, otherwise there could be a cascade of errors down the line.
