@@ -44,7 +44,7 @@
         @test (evaluate("<!NOTATION a SYSTEM \"   \">") == [ NotationDeclaration("a", nothing, "   ", L.Location("a buffer", -1)) ])
 
         @test (evaluate("<!NOTATION a PUBLIC \"\" \"\">") == [ NotationDeclaration("a", "", "", L.Location("a buffer", -1)) ])
-        @test (evaluate("<!NOTATION a\nPUBLIC\r\"\"\t\"\"	>") 
+        @test (evaluate("<!NOTATION a\nPUBLIC\r\"\"\t\"\"	>")
                == [ NotationDeclaration("a", "", "", L.Location("a buffer", -1)) ])
 
         @test (evaluate("<!NOTATION a PUBLIC \"   \" \"   \">")
@@ -96,32 +96,94 @@
                == [ NotationDeclaration("a", "'salut.not'", nothing, L.Location("a buffer", -1)) ])
     end
 
+    @testset "Events/Notation Declarations (Negative ... invalid or absent notation name.)" begin
+        # Be careful with some of these tests ... the parser keeps going, so we only check the FIRST event. (Otherwise
+        # we're testing the results of some other part of the parser.)
+        #
+        @test (evaluate("<!NOTATION")
+               == [ E.MarkupError("ERROR: Expecting a notation name.",
+                                  [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                    L.Token(L.text, "NOTATION", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+
+        events = evaluate("<!NOTATION>")
+        @test length(events) > 1
+        @test (events[1] == E.MarkupError("ERROR: Expecting a notation name.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "NOTATION", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+
+        events = evaluate("<!NOTATION >")
+        @test length(events) > 1
+        @test (events[1] == E.MarkupError("ERROR: Expecting a notation name.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "NOTATION", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+
+        # This one is a little weird: we're picking up "PUBLIC" as the notation name. I'll have to figure out later if
+        # that's allowed or not, but there doesn't appear to be anything in the specification that forbids it.
+        #
+        events = evaluate("<!NOTATION PUBLIC")
+        @test length(events) > 1
+        @test (events[1] == E.MarkupError("ERROR: A notation declaration must specify an external identifier.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "PUBLIC", L.Location("a buffer", -1)) ],
+                                          L.Location("a buffer", -1)))
+
+        # This one is a little weird: we're picking up "SYSTEM" as the notation name. I'll have to figure out later if
+        # that's allowed or not, but there doesn't appear to be anything in the specification that forbids it.
+        #
+        events = evaluate("<!NOTATION SYSTEM")
+        @test length(events) > 1
+        @test (events[1] == E.MarkupError("ERROR: A notation declaration must specify an external identifier.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "SYSTEM", L.Location("a buffer", -1)) ],
+                                          L.Location("a buffer", -1)))
+
+        events = evaluate("<!NOTATION \"\"")
+        @test length(events) > 1
+        @test (events[1] == E.MarkupError("ERROR: Expecting a notation name.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "NOTATION", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+
+        events = evaluate("<!NOTATION ''")
+        @test length(events) > 1
+        @test (events[1] == E.MarkupError("ERROR: Expecting a notation name.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "NOTATION", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+
+        events = evaluate("<!NOTATION <")
+        @test length(events) > 1
+        @test (events[1] == E.MarkupError("ERROR: Expecting a notation name.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "NOTATION", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+    end
+
     @testset "Events/Notation Declarations (Negative ... missing/invalid notation value.)" begin
         # Be careful with some of these tests ... the parser keeps going, so we only check the FIRST event. (Otherwise
         # we're testing the results of some other part of the parser.)
         #
         events = evaluate("<!NOTATION n>")
         @test length(events) > 1
-        @test (events[1] == E.MarkupError("ERROR: A notation declaration must specify an external identifier.", 
+        @test (events[1] == E.MarkupError("ERROR: A notation declaration must specify an external identifier.",
                                           [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                                             L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                            L.Token(L.text, "n", L.Location("a buffer", -1)) ], 
+                                            L.Token(L.text, "n", L.Location("a buffer", -1)) ],
                                           L.Location("a buffer", -1)))
 
         events = evaluate("<!NOTATION n >")
         @test length(events) > 1
-        @test (events[1] == E.MarkupError("ERROR: A notation declaration must specify an external identifier.", 
+        @test (events[1] == E.MarkupError("ERROR: A notation declaration must specify an external identifier.",
                                           [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                                             L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                            L.Token(L.text, "n", L.Location("a buffer", -1)) ], 
+                                            L.Token(L.text, "n", L.Location("a buffer", -1)) ],
                                           L.Location("a buffer", -1)))
 
         events = evaluate("<!NOTATION n\n>")
         @test length(events) > 1
-        @test (events[1] == E.MarkupError("ERROR: A notation declaration must specify an external identifier.", 
+        @test (events[1] == E.MarkupError("ERROR: A notation declaration must specify an external identifier.",
                                           [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                                             L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                            L.Token(L.text, "n", L.Location("a buffer", -1)) ], 
+                                            L.Token(L.text, "n", L.Location("a buffer", -1)) ],
                                           L.Location("a buffer", -1)))
 
         events = evaluate("<!NOTATION n PUBLIC")
