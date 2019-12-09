@@ -135,6 +135,13 @@ struct EntityReferenceParameter
 end
 
 
+struct NotationDeclaration
+    name                ::String
+    external_identifier ::Union{Nothing, ExternalIdentifier}
+    location            ::Lexical.Location
+end
+
+
 struct ProcessingInstruction
     target   ::String # It's someone else's job to verify that this isn't some case variant of "XML".
     value    ::String
@@ -506,7 +513,7 @@ function entity_declaration(mdo, tokens, channel)
         else
             consume_white_space!(tokens)
             if is_keyword("NDATA", tokens)
-                ndata = take!(tokens)        # Consume the NDATA keyword ... 
+                ndata = take!(tokens)        # Consume the NDATA keyword ...
                 consume_white_space!(tokens) # ... but discard any following white space.
 
                 if is_token(Lexical.text, tokens)
@@ -706,9 +713,7 @@ function markup_declaration(tokens, channel)
         entity_declaration(mdo, tokens, channel)
 
     elseif is_keyword("NOTATION", tokens)
-        # This is temporary until I write the element declaration parser.
-        #
-        put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
+        notation_declaration(mdo, tokens, channel)
 
     else
         if is_keyword("attlist", tokens)
@@ -740,6 +745,37 @@ function markup_declaration(tokens, channel)
         end
 
         put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
+    end
+end
+
+
+function notation_declaration(mdo, tokens, channel)
+    notation = take!(tokens)      # Consume the NOTATION keyword that got us here ...
+    consume_white_space!(tokens)  # ... but discard any following white space.
+
+    if is_token(Lexical.text, tokens)
+        notation_name = take!(tokens)
+        consume_white_space!(tokens)
+
+        external_identifier = collect_external_identifier(mdo, tokens, false, channel)
+        consume_white_space!(tokens)
+
+        if isnothing(external_identifier)
+            put!(channel, MarkupError("ERROR: A notation declaration must specify an external identifier.",
+                                      [ mdo, notation, notation_name ], Lexical.location_of(notation_name)))
+        end
+
+        if is_token(Lexical.tagc, tokens)
+            tagc = take!(tokens)
+            put!(channel, NotationDeclaration(notation_name.value, external_identifier, Lexical.location_of(notation)))
+
+        else
+            put!(channel, MarkupError("ERROR: Expecting '>' to end a notation declaration.",
+                                      [ mdo, notation, notation_name ], Lexical.location_of(notation_name)))
+        end
+
+    else
+        put!(channel, MarkupError("ERROR: Expecting a notation name.", [ mdo, notation ], Lexical.location_of(notation)))
     end
 end
 
@@ -853,7 +889,9 @@ function entity_reference(tokens, in_attribute = false)
 end
 
 
-function collect_external_identifier(mdo, tokens, channel)
+collect_external_identifier(mdo, tokens, channel) = collect_external_identifier(mdo, tokens, true, channel)
+
+function collect_external_identifier(mdo, tokens, is_strict, channel)
     if is_keyword("SYSTEM", tokens)
         system = take!(tokens)
         system_identifier = collect_string(Lexical.location_of(system), tokens, channel)
@@ -880,16 +918,22 @@ function collect_external_identifier(mdo, tokens, channel)
                 take!(tokens) # Don't bother holding on to this one. See [1], § 4.2.2 ... the white space is
                               # required, which seems kind of lame off hand, but so be it.
 
-            else
+            elseif is_strict | is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
+                # In strict mode, we always emit a markup if there is no white space between the public and system
+                # identifiers. In non-strict mode, we only output a markup error if it appears that we're looking at a
+                # system identifier.
+                #
                 put!(channel, MarkupError("ERROR: Expecting white space following a public identifier.",
                                           [ ], locations_of(mdo, public_identifier)[:tail]))
             end
 
-            system_identifier = collect_string(locations_of(mdo, public_identifier)[:tail], tokens, channel)
+            system_identifier = collect_string(locations_of(mdo, public_identifier)[:tail], tokens, is_strict, channel)
 
             if isnothing(system_identifier)
-                put!(channel, MarkupError("ERROR: Expecting a system identifier following a public identifier.",
-                                          [ ], locations_of(mdo, public_identifier)[:tail]))
+                if is_strict
+                    put!(channel, MarkupError("ERROR: Expecting a system identifier following a public identifier.",
+                                              [ ], locations_of(mdo, public_identifier)[:tail]))
+                end
 
                 return ExternalIdentifier(stringify(public_identifier), nothing, Lexical.location_of(public))
 
@@ -904,7 +948,9 @@ function collect_external_identifier(mdo, tokens, channel)
 end
 
 
-function collect_string(location, tokens, channel)
+collect_string(location, tokens, channel) = collect_string(location, tokens, true, channel)
+
+function collect_string(location, tokens, is_strict, channel)
     consume_white_space!(tokens)
 
     if is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
@@ -925,7 +971,9 @@ function collect_string(location, tokens, channel)
         return consumed
 
     else
-        put!(channel, MarkupError("ERROR: Expecting a quoted string.", [ ], location))
+        if is_strict
+            put!(channel, MarkupError("ERROR: Expecting a quoted string.", [ ], location))
+        end
 
         return nothing
     end

@@ -19,11 +19,6 @@
         @test length(events) > 1
         @test (first(events) == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
                                               [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
-
-        events = evaluate("<!NOTATION")
-        @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
-                                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
     end
 
     @testset "Events/Markup Declarations (Negative ... invalid token after <!)" begin
