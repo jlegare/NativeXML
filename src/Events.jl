@@ -767,12 +767,12 @@ function notation_declaration(mdo, tokens, channel)
 
         if is_token(Lexical.tagc, tokens)
             tagc = take!(tokens)
-            put!(channel, NotationDeclaration(notation_name.value, external_identifier, Lexical.location_of(notation)))
 
         else
             put!(channel, MarkupError("ERROR: Expecting '>' to end a notation declaration.",
                                       [ mdo, notation, notation_name ], Lexical.location_of(notation_name)))
         end
+        put!(channel, NotationDeclaration(notation_name.value, external_identifier, Lexical.location_of(notation)))
 
     else
         put!(channel, MarkupError("ERROR: Expecting a notation name.", [ mdo, notation ], Lexical.location_of(notation)))
