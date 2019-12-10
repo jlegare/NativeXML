@@ -36,8 +36,8 @@
         #
         events = evaluate("&#<")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting a character value.",
-                                              [ L.Token(L.cro, "&#", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting a character value.",
+                                          [ L.Token(L.cro, "&#", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
     end
 
     @testset "Events/Entity References/Character References (Negative ... no terminator)" begin
@@ -53,9 +53,9 @@
         #
         events = evaluate("&#10<")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting ';' to end a character reference.",
-                                              [ L.Token(L.cro, "&#", L.Location("a buffer", -1)),
-                                                L.Token(L.text, "10", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting ';' to end a character reference.",
+                                          [ L.Token(L.cro, "&#", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "10", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
     end
 
     @testset "Events/Entity References/General Entity References (Positive)" begin
@@ -92,8 +92,8 @@
         #
         events = evaluate("&<")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting an entity name.",
-                                              [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting an entity name.",
+                                          [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
     end
 
     @testset "Events/Entity References/General Entity References (Negative ... no terminator)" begin
@@ -109,9 +109,9 @@
         #
         events = evaluate("&a<")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting ';' to end an entity reference.",
-                                              [ L.Token(L.ero, "&", L.Location("a buffer", -1)),
-                                                L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting ';' to end an entity reference.",
+                                          [ L.Token(L.ero, "&", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
     end
 
     @testset "Events/Entity References/Parameter Entity References (Positive)" begin
@@ -135,7 +135,6 @@
                                                  [ L.Token(L.pero, "%", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
                                    E.DataContent(";", false, L.Location("a buffer", -1)) ])
 
-
         # Check that EOI is caught.
         #
         @test (evaluate("%") == [ E.MarkupError("ERROR: Expecting a parameter entity name.",
@@ -147,8 +146,8 @@
         #
         events = evaluate("%<")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting a parameter entity name.",
-                                              [ L.Token(L.pero, "%", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting a parameter entity name.",
+                                          [ L.Token(L.pero, "%", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
     end
 
     @testset "Events/Entity References/Parameter Entity References (Negative ... no terminator)" begin
@@ -164,8 +163,8 @@
         #
         events = evaluate("%a<")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting ';' to end a parameter entity reference.",
-                                              [ L.Token(L.pero, "%", L.Location("a buffer", -1)),
-                                                L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting ';' to end a parameter entity reference.",
+                                          [ L.Token(L.pero, "%", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
     end
 end

@@ -118,17 +118,17 @@
 
         events = evaluate("<a b \"c\">")
         @test length(events) > 1
-        @test first(events) == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting '=' after an attribute name.",
-                                                                   [ ], L.Location("a buffer", -1)) ],
-                                                         L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test events[1] == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting '=' after an attribute name.", 
+                                                               [ ], L.Location("a buffer", -1)) ], 
+                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
 
         events = evaluate("<a b=\"c\" d\"e\">")
         @test length(events) > 1
-        @test first(events) == ES(true, false, "a", [ AS("b", [ DC("c", false, L.Location("a buffer", -1)) ],
-                                                         L.Location("a buffer", -1)),
-                                                      AS("d", [ ME("ERROR: Expecting '=' after an attribute name.",
-                                                                   [ ], L.Location("a buffer", -1)) ],
-                                                         L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test events[1] == ES(true, false, "a", [ AS("b", [ DC("c", false, L.Location("a buffer", -1)) ],
+                                                     L.Location("a buffer", -1)),
+                                                  AS("d", [ ME("ERROR: Expecting '=' after an attribute name.",
+                                                               [ ], L.Location("a buffer", -1)) ],
+                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
     end
 
     @testset "Events/Attributes (Negative ... no quoted value)" begin
@@ -137,24 +137,27 @@
         #
         events = evaluate("<a b=")
         @test length(events) > 1
-        @test first(events) == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
-                                                                   [ ], L.Location("a buffer", -1)) ],
-                                                         L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test events[1] == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
+                                                               [ ], L.Location("a buffer", -1)) ],
+                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+
         events = evaluate("<a b = ")
         @test length(events) > 1
-        @test first(events) == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
-                                                                   [ ], L.Location("a buffer", -1)) ],
-                                                         L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test events[1] == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
+                                                               [ ], L.Location("a buffer", -1)) ],
+                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+
         events = evaluate("<a b=c")
         @test length(events) > 1
-        @test first(events) == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
-                                                                   [ ], L.Location("a buffer", -1)) ],
-                                                         L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test events[1] == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
+                                                               [ ], L.Location("a buffer", -1)) ],
+                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+
         events = evaluate("<a b= c")
         @test length(events) > 1
-        @test first(events) == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
-                                                                   [ ], L.Location("a buffer", -1)) ],
-                                                         L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test events[1] == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
+                                                               [ ], L.Location("a buffer", -1)) ],
+                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
     end
 
     @testset "Events/Attributes (Negative ... incomplete quoted value)" begin
@@ -163,15 +166,16 @@
         #
         events = evaluate("<a b=\"")
         @test length(events) > 1
-        @test first(events) == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting the remainder of an attribute value.",
-                                                                   [ ], L.Location("a buffer", -1)) ],
-                                                         L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test events[1] == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting the remainder of an attribute value.",
+                                                               [ ], L.Location("a buffer", -1)) ],
+                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+
         events = evaluate("<a b=\"c")
         @test length(events) > 1
-        @test first(events) == ES(true, false, "a", [ AS("b", [ DC("c", false, L.Location("a buffer", -1)),
-                                                                ME("ERROR: Expecting the remainder of an attribute value.",
-                                                                   [ ], L.Location("a buffer", -1)) ],
-                                                         L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test events[1] == ES(true, false, "a", [ AS("b", [ DC("c", false, L.Location("a buffer", -1)),
+                                                            ME("ERROR: Expecting the remainder of an attribute value.",
+                                                               [ ], L.Location("a buffer", -1)) ],
+                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
     end
 
     @testset "Events/Attributes (Negative ... unescaped special characters)" begin
@@ -180,6 +184,7 @@
                                                          [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ],
                                                          L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ],
                        L.Location("a buffer", -1)) ])
+
         @test (evaluate("<a b=\"<<<\">")
                == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '<' must be escaped inside an attribute value.",
                                                          [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ],
@@ -191,6 +196,7 @@
                                                          [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ],
                                                          L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ],
                     L.Location("a buffer", -1)) ])
+
         @test (evaluate("<a b=\"Hello, <World!\">")
                == [ ES(false, false, "a", [ AS("b", [ DC("Hello", false, L.Location("a buffer", -1)),
                                                       DC(",", false, L.Location("a buffer", -1)),
@@ -206,6 +212,7 @@
                                                          [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ],
                                                          L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ],
                        L.Location("a buffer", -1)) ])
+
         @test (evaluate("<a b=\"&&&\">")
                == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '&' must be escaped inside an attribute value.",
                                                          [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ],
@@ -217,6 +224,7 @@
                                                          [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ],
                                                          L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ],
                     L.Location("a buffer", -1)) ])
+
         @test (evaluate("<a b=\"Jack & Jill\">")
                == [ ES(false, false, "a", [ AS("b", [ DC("Jack", false, L.Location("a buffer", -1)),
                                                       DC(" ", true, L.Location("a buffer", -1)),

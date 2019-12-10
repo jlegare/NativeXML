@@ -120,12 +120,12 @@
         #
         events = evaluate("<<?")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting an element name.",
-                                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting an element name.",
+                                          [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
 
         events = evaluate("< ")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting an element name.",
-                                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting an element name.",
+                                          [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
     end
 end

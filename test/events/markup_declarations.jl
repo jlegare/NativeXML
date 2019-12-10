@@ -12,13 +12,13 @@
         #
         events = evaluate("<!ATTLIST")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
-                                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
 
         events = evaluate("<!ELEMENT")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
-                                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
     end
 
     @testset "Events/Markup Declarations (Negative ... invalid token after <!)" begin
@@ -27,20 +27,20 @@
         #
         events = evaluate("<!")
         @test length(events) == 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
+        @test (events[1] == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
                                               [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
 
         events = evaluate("<! ")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
-                                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
 
         # Check that some random token is caught.
         #
         events = evaluate("<!bob")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
-                                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting the start of a markup declaration.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
 
         # Look for the lowercased-versions of the correct keywords. These are valid in SGML, but invalid in XML.
         #

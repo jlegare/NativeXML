@@ -62,9 +62,9 @@
         #
         events = evaluate("<![<")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.",
-                                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                                L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.",
+                                          [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                            L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
     end
 
     @testset "Events/CDATA Marked Section (Negative ... wrong section type (CDATA))" begin

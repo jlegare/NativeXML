@@ -60,8 +60,8 @@
         #
         events = evaluate("<?<")
         @test length(events) > 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting a PI target.",
-                                              [ L.Token(L.pio, "<?", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting a PI target.",
+                                          [ L.Token(L.pio, "<?", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
     end
 
     @testset "Events/Processing Instructions (Negative ... no terminator)" begin
@@ -87,10 +87,10 @@
         #
         events = evaluate("<?target<")
         @test length(events) == 1
-        @test (first(events) == E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
-                                              [ L.Token(L.pio, "<?", L.Location("a buffer", -1)),
-                                                L.Token(L.text, "target", L.Location("a buffer", -1)),
-                                                L.Token(L.stago, "<", L.Location("a buffer", -1)) ],
-                                              L.Location("a buffer", -1)))
+        @test (events[1] == E.MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
+                                          [ L.Token(L.pio, "<?", L.Location("a buffer", -1)),
+                                            L.Token(L.text, "target", L.Location("a buffer", -1)),
+                                            L.Token(L.stago, "<", L.Location("a buffer", -1)) ],
+                                          L.Location("a buffer", -1)))
     end
 end
