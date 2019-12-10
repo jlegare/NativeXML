@@ -115,8 +115,8 @@
 
         events = evaluate("<a b \"c\">")
         @test length(events) >= 6
-        @test events[1:6] == [ ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting '=' after an attribute name.", 
-                                                                   [ ], L.Location("a buffer", -1)) ], 
+        @test events[1:6] == [ ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting '=' after an attribute name.",
+                                                                   [ ], L.Location("a buffer", -1)) ],
                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
 
                                ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)),
