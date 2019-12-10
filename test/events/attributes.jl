@@ -173,9 +173,6 @@
     end
 
     @testset "Events/Attributes (Negative ... incomplete quoted value)" begin
-        # Be careful here ... the attributes parser bails as soon as it sees the VI is missing, and then another parser
-        # can kick in. So only check the FIRST events.
-        #
         events = evaluate("<a b=\"")
         @test length(events) >= 2
         @test events[1:2] == [ ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting the remainder of an attribute value.",
