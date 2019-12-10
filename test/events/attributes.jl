@@ -107,9 +107,6 @@
     end
 
     @testset "Events/Attributes (Negative ... no VI)" begin
-        # Be careful here ... the attributes parser bails as soon as it sees the VI is missing, and then another parser
-        # can kick in. So only check the FIRST events.
-        #
         @test (evaluate("<a b")
                == [ ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting '=' after an attribute name.",
                                                         [ ], L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ],
@@ -117,47 +114,62 @@
                     ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<a b \"c\">")
-        @test length(events) > 1
-        @test events[1] == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting '=' after an attribute name.", 
-                                                               [ ], L.Location("a buffer", -1)) ], 
-                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test length(events) >= 6
+        @test events[1:6] == [ ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting '=' after an attribute name.", 
+                                                                   [ ], L.Location("a buffer", -1)) ], 
+                                                    L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+
+                               ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)),
+                               DC("\"", false, L.Location("a buffer", -1)),
+                               DC("c", false, L.Location("a buffer", -1)),
+                               DC("\"", false, L.Location("a buffer", -1)),
+                               DC(">", false, L.Location("a buffer", -1)) ]
 
         events = evaluate("<a b=\"c\" d\"e\">")
-        @test length(events) > 1
-        @test events[1] == ES(true, false, "a", [ AS("b", [ DC("c", false, L.Location("a buffer", -1)) ],
-                                                     L.Location("a buffer", -1)),
-                                                  AS("d", [ ME("ERROR: Expecting '=' after an attribute name.",
-                                                               [ ], L.Location("a buffer", -1)) ],
-                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test length(events) >= 6
+        @test events[1:6] == [ ES(true, false, "a", [ AS("b", [ DC("c", false, L.Location("a buffer", -1)) ],
+                                                         L.Location("a buffer", -1)),
+                                                      AS("d", [ ME("ERROR: Expecting '=' after an attribute name.",
+                                                                   [ ], L.Location("a buffer", -1)) ],
+                                                         L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                               ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)),
+                               DC("\"", false, L.Location("a buffer", -1)),
+                               DC("e", false, L.Location("a buffer", -1)),
+                               DC("\"", false, L.Location("a buffer", -1)),
+                               DC(">", false, L.Location("a buffer", -1)) ]
+
     end
 
     @testset "Events/Attributes (Negative ... no quoted value)" begin
-        # Be careful here ... the attributes parser bails as soon as it sees the VI is missing, and then another parser
-        # can kick in. So only check the FIRST events.
-        #
         events = evaluate("<a b=")
-        @test length(events) > 1
-        @test events[1] == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
-                                                               [ ], L.Location("a buffer", -1)) ],
+        @test length(events) >= 2
+        @test events[1:2] == [ ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
+                                                                   [ ], L.Location("a buffer", -1)) ],
                                                      L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+                               ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)) ]
 
         events = evaluate("<a b = ")
-        @test length(events) > 1
-        @test events[1] == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
-                                                               [ ], L.Location("a buffer", -1)) ],
+        @test length(events) >= 2
+        @test events[1:2] == [ ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
+                                                                   [ ], L.Location("a buffer", -1)) ],
                                                      L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+                               ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)) ]
 
         events = evaluate("<a b=c")
-        @test length(events) > 1
-        @test events[1] == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
-                                                               [ ], L.Location("a buffer", -1)) ],
-                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test length(events) >= 3
+        @test events[1:3] == [ ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
+                                                                   [ ], L.Location("a buffer", -1)) ],
+                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                               ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)),
+                               DC("c", false, L.Location("a buffer", -1)) ]
 
         events = evaluate("<a b= c")
-        @test length(events) > 1
-        @test events[1] == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
-                                                               [ ], L.Location("a buffer", -1)) ],
-                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test length(events) >= 3
+        @test events[1:3] == [ ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting a quoted attribute value after '='.",
+                                                                   [ ], L.Location("a buffer", -1)) ],
+                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                               ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)),
+                               DC("c", false, L.Location("a buffer", -1)) ]
     end
 
     @testset "Events/Attributes (Negative ... incomplete quoted value)" begin
@@ -165,17 +177,19 @@
         # can kick in. So only check the FIRST events.
         #
         events = evaluate("<a b=\"")
-        @test length(events) > 1
-        @test events[1] == ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting the remainder of an attribute value.",
-                                                               [ ], L.Location("a buffer", -1)) ],
-                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test length(events) >= 2
+        @test events[1:2] == [ ES(true, false, "a", [ AS("b", [ ME("ERROR: Expecting the remainder of an attribute value.",
+                                                                   [ ], L.Location("a buffer", -1)) ],
+                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                               ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)) ]
 
         events = evaluate("<a b=\"c")
-        @test length(events) > 1
-        @test events[1] == ES(true, false, "a", [ AS("b", [ DC("c", false, L.Location("a buffer", -1)),
-                                                            ME("ERROR: Expecting the remainder of an attribute value.",
-                                                               [ ], L.Location("a buffer", -1)) ],
-                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1))
+        @test length(events) >= 2
+        @test events[1:2] == [ ES(true, false, "a", [ AS("b", [ DC("c", false, L.Location("a buffer", -1)),
+                                                                ME("ERROR: Expecting the remainder of an attribute value.",
+                                                                   [ ], L.Location("a buffer", -1)) ],
+                                                     L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                               ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)) ]
     end
 
     @testset "Events/Attributes (Negative ... unescaped special characters)" begin
