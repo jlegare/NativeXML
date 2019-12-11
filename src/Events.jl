@@ -742,9 +742,10 @@ function markup_declaration(tokens, channel)
 
         elseif is_keyword("usemap", tokens)
             put!(channel, MarkupError("ERROR: The keyword 'usemap' is not available in XML.", [ ], Lexical.location_of(mdo)))
-        end
 
-        put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
+        else
+            put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
+        end
     end
 end
 
