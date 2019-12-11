@@ -655,8 +655,12 @@ function processing_instruction(tokens, channel)
     pio = take!(tokens) # Consume the PIO token that got us here.
 
     if is_token(Lexical.text, tokens)
-        target = take!(tokens) # See [1], § 2.6 ... the PI target is required. Technically, we should exclude all case
-                               # variants of "XML" from the PI target, but let's leave that to another layer for now.
+        if is_keyword_case_insensitive("XML", tokens)
+            put!(channel, MarkupError("ERROR: A PI target cannot be any case variant of 'XML'.", [ pio ],
+                                      Lexical.location_of(pio)))
+        end
+
+        target = take!(tokens) # See [1], § 2.6 ... the PI target is required.
 
         consume_white_space!(tokens) # Discard any white space. Again, see [1], § 2.6 ... the white space is required,
                                      # so it's syntax and doesn't belong in the PI value.

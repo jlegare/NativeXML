@@ -27,9 +27,20 @@
         # The specification excludes all case variants of "xml" for the PI target, but the parser doesn't care. So
         # ensure they get captured at this level.
         #
-        @test evaluate("<?XML?>") == [ PI("XML", "", L.Location("a buffer", -1)) ]
-        @test evaluate("<?xml?>") == [ PI("xml", "", L.Location("a buffer", -1)) ]
-        @test evaluate("<?xmL?>") == [ PI("xmL", "", L.Location("a buffer", -1)) ]
+        events = evaluate("<?XML?>")
+        @test events == [ ME("ERROR: A PI target cannot be any case variant of 'XML'.",
+                             [ L.Token(L.pio, "<?", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                          PI("XML", "", L.Location("a buffer", -1)) ]
+
+        events = evaluate("<?xml?>")
+        @test events == [ ME("ERROR: A PI target cannot be any case variant of 'XML'.",
+                             [ L.Token(L.pio, "<?", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                          PI("xml", "", L.Location("a buffer", -1)) ]
+
+        events = evaluate("<?xmL?>")
+        @test events == [ ME("ERROR: A PI target cannot be any case variant of 'XML'.",
+                             [ L.Token(L.pio, "<?", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                          PI("xmL", "", L.Location("a buffer", -1)) ]
 
         @test evaluate("<?target value?>") == [ PI("target", "value", L.Location("a buffer", -1)) ]
         @test (evaluate("<?target value value value?>") == [ PI("target", "value value value", L.Location("a buffer", -1)) ])
