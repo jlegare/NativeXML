@@ -62,8 +62,11 @@
                            DC("element", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!entity")
-        @test length(events) == 2
+        @test length(events) == 3
         @test (events == [ ME("ERROR: The keyword 'ENTITY' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: White space is required following the 'ENTITY' keyword.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "entity", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
                            ME("ERROR: Expecting an entity name.",
                               [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                                 L.Token(L.text, "entity", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])

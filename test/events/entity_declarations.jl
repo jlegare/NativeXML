@@ -68,13 +68,19 @@
 
     @testset "Events/Entity Declarations, Internal General (Negative ... invalid or absent entity name.)" begin
         @test (evaluate("<!ENTITY")
-               == [ ME("ERROR: Expecting an entity name.",
+               == [ ME("ERROR: White space is required following the 'ENTITY' keyword.",
+                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                         L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting an entity name.",
                        [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                          L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY>")
-        @test length(events) == 2
-        @test (events == [ ME("ERROR: Expecting an entity name.",
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: White space is required following the 'ENTITY' keyword.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an entity name.",
                               [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                                 L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
                            DC(">", false, L.Location("a buffer", -1)) ])
@@ -206,13 +212,21 @@
 
     @testset "Events/Entity Declarations, Internal Parameter (Negative ... invalid or absent entity name.)" begin
         @test (evaluate("<!ENTITY %")
-               == [ ME("ERROR: Expecting an entity name.",
+               == [ ME("ERROR: White space is required following '%'.",
+                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                         L.Token(L.text, "ENTITY", L.Location("a buffer", -1)),
+                         L.Token(L.pero, "%", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting an entity name.",
                        [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                          L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY %>")
-        @test length(events) == 2
-        @test (events == [ ME("ERROR: Expecting an entity name.",
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: White space is required following '%'.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)),
+                                L.Token(L.pero, "%", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an entity name.",
                               [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                                 L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
                            DC(">", false, L.Location("a buffer", -1)) ])

@@ -448,13 +448,27 @@ function entity_declaration(mdo, tokens, channel)
     end
 
 
-    entity = take!(tokens)       # Consume the ENTITY keyword that got us here ...
-    consume_white_space!(tokens) # ... but discard any following white space.
+    entity = take!(tokens)       # Consume the ENTITY keyword that got us here.
+    ws = consume_white_space!(tokens)
+
+    if isnothing(ws)
+        # See [1], § 4.2 ... the white space is required.
+        #
+        put!(channel, MarkupError("ERROR: White space is required following the 'ENTITY' keyword.", [ mdo, entity ],
+                                  Lexical.location_of(entity)))
+    end
 
     is_parameter_entity = is_token(Lexical.pero, tokens)
     if is_parameter_entity
-        take!(tokens)
-        consume_white_space!(tokens)
+        pero = take!(tokens)
+        ws = consume_white_space!(tokens)
+
+        if isnothing(ws)
+            # See [1], § 4.2 ... the white space is required. This one is pretty lame, but it is what it is.
+            #
+            put!(channel, MarkupError("ERROR: White space is required following '%'.", [ mdo, entity, pero ],
+                                      Lexical.location_of(pero)))
+        end
     end
 
     if is_token(Lexical.text, tokens)
@@ -542,7 +556,7 @@ function events(state::Lexical.State)
 
             else
                 if is_token(Lexical.ws, tokens)
-                    ws = take!(tokens)
+                    ws = consume_white_space!(tokens)
                     push!(channel, DataContent(ws.value, true, Lexical.location_of(ws)))
 
                 else
@@ -763,7 +777,7 @@ function collect_attributes(tokens)
                                              Lexical.location_of(stago)))
 
                 elseif is_token(Lexical.ws, tokens)
-                    ws = take!(tokens)
+                    ws = consume_white_space!(tokens)
                     push!(value, DataContent(ws.value, true, Lexical.location_of(ws)))
 
                 else
@@ -782,7 +796,7 @@ function collect_attributes(tokens)
 
     while true
         if is_token(Lexical.ws, tokens)
-            take!(tokens)
+            consume_white_space!(tokens)
 
             if is_token(Lexical.text, tokens)
                 push!(attributes, collect_attribute(tokens))
@@ -854,8 +868,8 @@ function collect_external_identifier(mdo, tokens, is_strict, channel)
 
         else
             if is_token(Lexical.ws, tokens)
-                take!(tokens) # Don't bother holding on to this one. See [1], § 4.2.2 ... the white space is
-                              # required, which seems kind of lame off hand, but so be it.
+                consume_white_space!(tokens) # Consume any white space. See [1], § 4.2.2 ... the white space is
+                                             # required, which seems kind of lame off hand, but so be it.
 
             elseif is_strict | is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
                 # In strict mode, we always emit a markup if there is no white space between the public and system
@@ -948,7 +962,10 @@ end
 
 function consume_white_space!(tokens)
     if is_token(Lexical.ws, tokens)
-        take!(tokens)
+        return take!(tokens)
+
+    else
+        return nothing
     end
 end
 
