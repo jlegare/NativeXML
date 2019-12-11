@@ -218,7 +218,11 @@ end
 function cdata_marked_section(mdo, tokens, channel)
     dso = take!(tokens) # Consume the DSO that got us here.
 
-    if is_keyword("CDATA", tokens)
+    if is_keyword_case_insensitive("CDATA", tokens)
+        if !is_keyword("CDATA", tokens)
+            put!(channel, MarkupError("ERROR: The keyword 'CDATA' must be uppercased.", [ mdo, dso ], Lexical.location_of(mdo)))
+        end
+
         text = take!(tokens) # Consume the CDATA keyword.
 
         if is_token(Lexical.dso, tokens)
@@ -582,32 +586,32 @@ function markup_declaration(tokens, channel)
         notation_declaration(mdo, tokens, channel)
 
     else
-        if is_keyword("attlist", tokens)
-            put!(channel, MarkupError("ERROR: The keyword 'attlist' must be uppercased.", [ ], Lexical.location_of(mdo)))
+        if is_keyword_case_insensitive("ATTLIST", tokens)
+            put!(channel, MarkupError("ERROR: The keyword 'ATTLIST' must be uppercased.", [ ], Lexical.location_of(mdo)))
 
-        elseif is_keyword("doctype", tokens)
+        elseif is_keyword_case_insensitive("DOCTYPE", tokens)
             # Emit an error, but keep going: we might be able to make sense of this.
             #
-            put!(channel, MarkupError("ERROR: The keyword 'doctype' must be uppercased.", [ ], Lexical.location_of(mdo)))
+            put!(channel, MarkupError("ERROR: The keyword 'DOCTYPE' must be uppercased.", [ ], Lexical.location_of(mdo)))
             document_type_declaration(mdo, tokens, channel)
 
-        elseif is_keyword("element", tokens)
-            put!(channel, MarkupError("ERROR: The keyword 'element' must be uppercased.", [ ], Lexical.location_of(mdo)))
+        elseif is_keyword_case_insensitive("ELEMENT", tokens)
+            put!(channel, MarkupError("ERROR: The keyword 'ELEMENT' must be uppercased.", [ ], Lexical.location_of(mdo)))
 
-        elseif is_keyword("entity", tokens)
+        elseif is_keyword_case_insensitive("ENTITY", tokens)
             # Emit an error, but keep going: we might be able to make sense of this.
             #
-            put!(channel, MarkupError("ERROR: The keyword 'entity' must be uppercased.", [ ], Lexical.location_of(mdo)))
+            put!(channel, MarkupError("ERROR: The keyword 'ENTITY' must be uppercased.", [ ], Lexical.location_of(mdo)))
             entity_declaration(mdo, tokens, channel)
 
-        elseif is_keyword("notation", tokens)
-            put!(channel, MarkupError("ERROR: The keyword 'notation' must be uppercased.", [ ], Lexical.location_of(mdo)))
+        elseif is_keyword_case_insensitive("NOTATION", tokens)
+            put!(channel, MarkupError("ERROR: The keyword 'NOTATION' must be uppercased.", [ ], Lexical.location_of(mdo)))
 
-        elseif is_keyword("shortref", tokens)
-            put!(channel, MarkupError("ERROR: The keyword 'shortref' is not available in XML.", [ ], Lexical.location_of(mdo)))
+        elseif is_keyword_case_insensitive("SHORTREF", tokens)
+            put!(channel, MarkupError("ERROR: The keyword 'SHORTREF' is not available in XML.", [ ], Lexical.location_of(mdo)))
 
-        elseif is_keyword("usemap", tokens)
-            put!(channel, MarkupError("ERROR: The keyword 'usemap' is not available in XML.", [ ], Lexical.location_of(mdo)))
+        elseif is_keyword_case_insensitive("USEMAP", tokens)
+            put!(channel, MarkupError("ERROR: The keyword 'USEMAP' is not available in XML.", [ ], Lexical.location_of(mdo)))
 
         else
             put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
