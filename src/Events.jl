@@ -190,8 +190,6 @@ ElementStart(is_empty, name, attributes, location) = ElementStart(false, is_empt
 DataContent(tokens::Array, location) = DataContent(join(map(token -> token.value, tokens), ""), location)
 DataContent(value, location) = DataContent(value, false, location)
 
-is_eoi(tokens) = !isopen(tokens) & !isready(tokens)
-
 
 # These are needed for writing tests, because these types contain other structs inside an array.
 #
@@ -272,88 +270,6 @@ function cdata_marked_section(mdo, tokens, channel)
 end
 
 
-function collect_attributes(tokens)
-    function collect_attribute(tokens)
-        name = take!(tokens)         # Collect the attribute name token that got us here ...
-        consume_white_space!(tokens) # ... but discard any following white space.
-
-        value = Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter, MarkupError}, 1}()
-
-        if is_token(Lexical.vi, tokens)
-            vi = take!(tokens)
-            consume_white_space!(tokens)
-            collect_attribute_value(vi, value, tokens)
-
-        else
-            push!(value, MarkupError("ERROR: Expecting '=' after an attribute name.", [ ], Lexical.location_of(name)))
-        end
-
-        return AttributeSpecification(name.value, value, Lexical.location_of(name))
-    end
-
-    function collect_attribute_value(vi, value, tokens)
-        if is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
-            delimiter = take!(tokens)
-
-            while true
-                if is_eoi(tokens)
-                    push!(value, MarkupError("ERROR: Expecting the remainder of an attribute value.", [ ],
-                                             Lexical.location_of(vi)))
-                    break
-
-                elseif fetch(tokens).token_type == delimiter.token_type
-                    take!(tokens)
-                    break
-
-                elseif is_token(Lexical.cro, tokens)
-                    push!(value, character_reference(tokens))
-
-                elseif is_token(Lexical.ero, tokens)
-                    push!(value, entity_reference(tokens, true))
-
-                elseif is_token(Lexical.stago, tokens)
-                    stago = take!(tokens)
-                    push!(value, MarkupError("ERROR: A '<' must be escaped inside an attribute value.", [ stago ],
-                                             Lexical.location_of(stago)))
-
-                elseif is_token(Lexical.ws, tokens)
-                    ws = take!(tokens)
-                    push!(value, DataContent(ws.value, true, Lexical.location_of(ws)))
-
-                else
-                    data_content = take!(tokens)
-                    push!(value, DataContent(data_content.value, Lexical.location_of(data_content)))
-                end
-            end
-
-        else
-            push!(value, MarkupError("ERROR: Expecting a quoted attribute value after '='.", [ ], Lexical.location_of(vi)))
-        end
-    end
-
-
-    attributes = Array{AttributeSpecification, 1}()
-
-    while true
-        if is_token(Lexical.ws, tokens)
-            take!(tokens)
-
-            if is_token(Lexical.text, tokens)
-                push!(attributes, collect_attribute(tokens))
-
-            else
-                break
-            end
-
-        else
-            break
-        end
-    end
-
-    return attributes
-end
-
-
 function comment(mdo, tokens, channel)
     com = take!(tokens) # Consume the COM token that got us here.
 
@@ -394,13 +310,6 @@ function comment(mdo, tokens, channel)
         else
             push!(consumed, take!(tokens))
         end
-    end
-end
-
-
-function consume_white_space!(tokens)
-    if is_token(Lexical.ws, tokens)
-        take!(tokens)
     end
 end
 
@@ -610,10 +519,10 @@ function events(state::Lexical.State)
                 put!(channel, character_reference(tokens))
 
             elseif is_token(Lexical.ero, tokens)
-                put!(channel, entity_reference(tokens))
+                put!(channel, collect_entity_reference(tokens))
 
             elseif is_token(Lexical.pero, tokens)
-                parameter_entity_reference(tokens, channel)
+                put!(channel, collect_parameter_entity_reference(tokens))
 
             elseif is_token(Lexical.pio, tokens)
                 processing_instruction(tokens, channel)
@@ -641,49 +550,6 @@ function events(state::Lexical.State)
     end
 
     return Channel(eventified; csize = 1)
-end
-
-
-function is_keyword(keyword, tokens)
-    if is_token(Lexical.text, tokens)
-        text = fetch(tokens)
-
-        return text.value == keyword
-
-    else
-        return false
-    end
-end
-
-
-function is_token(token_type, tokens)
-    if isready(tokens) | isopen(tokens)
-        token = fetch(tokens)
-
-        return token.token_type == token_type
-
-    else
-        return false
-    end
-end
-
-
-function locations_of(leader, consumed)
-    if length(consumed) > 0
-        head = Lexical.location_of(consumed[1])
-
-    else
-        head = Lexical.location_of(leader)
-    end
-
-    if length(consumed) > 0
-        tail = Lexical.location_of(consumed[end])
-
-    else
-        tail = Lexical.location_of(leader)
-    end
-
-    return ( head = head, tail = tail )
 end
 
 
@@ -781,27 +647,6 @@ function notation_declaration(mdo, tokens, channel)
 end
 
 
-function parameter_entity_reference(tokens, channel)
-    pero = take!(tokens) # Consume the PERO token that got us here.
-
-    if is_token(Lexical.text, tokens)
-        name = take!(tokens)
-        if is_token(Lexical.refc, tokens)
-            refc = take!(tokens)
-
-            put!(channel, EntityReferenceParameter(name.value, Lexical.location_of(pero)))
-
-        else
-            put!(channel, MarkupError("ERROR: Expecting ';' to end a parameter entity reference.", [ pero, name ],
-                                      Lexical.location_of(name)))
-        end
-
-    else
-        put!(channel, MarkupError("ERROR: Expecting a parameter entity name.", [ pero ], Lexical.location_of(pero)))
-    end
-end
-
-
 function processing_instruction(tokens, channel)
     pio = take!(tokens) # Consume the PIO token that got us here.
 
@@ -840,6 +685,8 @@ end
 
 # ----------------------------------------
 # SMALL PARSERS
+#
+# Small parsers return the event rather than emitting it to a channel. They can, however, emit markup errors.
 # ----------------------------------------
 
 function character_reference(tokens)
@@ -863,7 +710,89 @@ function character_reference(tokens)
 end
 
 
-function entity_reference(tokens, in_attribute = false)
+function collect_attributes(tokens)
+    function collect_attribute(tokens)
+        name = take!(tokens)         # Collect the attribute name token that got us here ...
+        consume_white_space!(tokens) # ... but discard any following white space.
+
+        value = Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter, MarkupError}, 1}()
+
+        if is_token(Lexical.vi, tokens)
+            vi = take!(tokens)
+            consume_white_space!(tokens)
+            collect_attribute_value(vi, value, tokens)
+
+        else
+            push!(value, MarkupError("ERROR: Expecting '=' after an attribute name.", [ ], Lexical.location_of(name)))
+        end
+
+        return AttributeSpecification(name.value, value, Lexical.location_of(name))
+    end
+
+    function collect_attribute_value(vi, value, tokens)
+        if is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
+            delimiter = take!(tokens)
+
+            while true
+                if is_eoi(tokens)
+                    push!(value, MarkupError("ERROR: Expecting the remainder of an attribute value.", [ ],
+                                             Lexical.location_of(vi)))
+                    break
+
+                elseif fetch(tokens).token_type == delimiter.token_type
+                    take!(tokens)
+                    break
+
+                elseif is_token(Lexical.cro, tokens)
+                    push!(value, character_reference(tokens))
+
+                elseif is_token(Lexical.ero, tokens)
+                    push!(value, collect_entity_reference(tokens, true))
+
+                elseif is_token(Lexical.stago, tokens)
+                    stago = take!(tokens)
+                    push!(value, MarkupError("ERROR: A '<' must be escaped inside an attribute value.", [ stago ],
+                                             Lexical.location_of(stago)))
+
+                elseif is_token(Lexical.ws, tokens)
+                    ws = take!(tokens)
+                    push!(value, DataContent(ws.value, true, Lexical.location_of(ws)))
+
+                else
+                    data_content = take!(tokens)
+                    push!(value, DataContent(data_content.value, Lexical.location_of(data_content)))
+                end
+            end
+
+        else
+            push!(value, MarkupError("ERROR: Expecting a quoted attribute value after '='.", [ ], Lexical.location_of(vi)))
+        end
+    end
+
+
+    attributes = Array{AttributeSpecification, 1}()
+
+    while true
+        if is_token(Lexical.ws, tokens)
+            take!(tokens)
+
+            if is_token(Lexical.text, tokens)
+                push!(attributes, collect_attribute(tokens))
+
+            else
+                break
+            end
+
+        else
+            break
+        end
+    end
+
+    return attributes
+end
+
+
+function collect_entity_reference(tokens, in_attribute = false)
     ero = take!(tokens) # Consume the ERO token that got us here.
 
     if is_token(Lexical.text, tokens)
@@ -874,14 +803,12 @@ function entity_reference(tokens, in_attribute = false)
             return EntityReferenceGeneral(name.value, Lexical.location_of(ero))
 
         else
-            return MarkupError("ERROR: Expecting ';' to end an entity reference.", [ ero, name ],
-                               Lexical.location_of(name))
+            return MarkupError("ERROR: Expecting ';' to end an entity reference.", [ ero, name ], Lexical.location_of(name))
         end
 
     else
         if in_attribute
-            return MarkupError("ERROR: A '&' must be escaped inside an attribute value.", [ ero ],
-                               Lexical.location_of(ero))
+            return MarkupError("ERROR: A '&' must be escaped inside an attribute value.", [ ero ], Lexical.location_of(ero))
 
         else
             return MarkupError("ERROR: Expecting an entity name.", [ ero ], Lexical.location_of(ero))
@@ -890,7 +817,10 @@ function entity_reference(tokens, in_attribute = false)
 end
 
 
-collect_external_identifier(mdo, tokens, channel) = collect_external_identifier(mdo, tokens, true, channel)
+function collect_external_identifier(mdo, tokens, channel)
+    return collect_external_identifier(mdo, tokens, true, channel)
+end
+
 
 function collect_external_identifier(mdo, tokens, is_strict, channel)
     if is_keyword("SYSTEM", tokens)
@@ -949,7 +879,31 @@ function collect_external_identifier(mdo, tokens, is_strict, channel)
 end
 
 
-collect_string(location, tokens, channel) = collect_string(location, tokens, true, channel)
+function collect_parameter_entity_reference(tokens)
+    pero = take!(tokens) # Consume the PERO token that got us here.
+
+    if is_token(Lexical.text, tokens)
+        name = take!(tokens)
+        if is_token(Lexical.refc, tokens)
+            refc = take!(tokens)
+
+            return EntityReferenceParameter(name.value, Lexical.location_of(pero))
+
+        else
+            return MarkupError("ERROR: Expecting ';' to end a parameter entity reference.", [ pero, name ],
+                               Lexical.location_of(name))
+        end
+
+    else
+        return MarkupError("ERROR: Expecting a parameter entity name.", [ pero ], Lexical.location_of(pero))
+    end
+end
+
+
+function collect_string(location, tokens, channel)
+    return collect_string(location, tokens, true, channel)
+end
+
 
 function collect_string(location, tokens, is_strict, channel)
     consume_white_space!(tokens)
@@ -983,6 +937,73 @@ end
 # ----------------------------------------
 # UTILITIES
 # ----------------------------------------
+
+function consume_white_space!(tokens)
+    if is_token(Lexical.ws, tokens)
+        take!(tokens)
+    end
+end
+
+
+function is_eoi(tokens)
+    return !isopen(tokens) & !isready(tokens)
+end
+
+
+function is_keyword(keyword, tokens)
+    if is_token(Lexical.text, tokens)
+        text = fetch(tokens)
+
+        return text.value == keyword
+
+    else
+        return false
+    end
+end
+
+
+function is_keyword_case_insensitive(keyword, tokens)
+    if is_token(Lexical.text, tokens)
+        text = fetch(tokens)
+
+        return lowercase(text.value) == lowercase(keyword)
+
+    else
+        return false
+    end
+end
+
+
+function is_token(token_type, tokens)
+    if isready(tokens) | isopen(tokens)
+        token = fetch(tokens)
+
+        return token.token_type == token_type
+
+    else
+        return false
+    end
+end
+
+
+function locations_of(leader, consumed)
+    if length(consumed) > 0
+        head = Lexical.location_of(consumed[1])
+
+    else
+        head = Lexical.location_of(leader)
+    end
+
+    if length(consumed) > 0
+        tail = Lexical.location_of(consumed[end])
+
+    else
+        tail = Lexical.location_of(leader)
+    end
+
+    return ( head = head, tail = tail )
+end
+
 
 function stringify(consumed_tokens)
     return join(map(value -> value.value, consumed_tokens), "")
