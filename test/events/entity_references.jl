@@ -41,11 +41,11 @@
         # Check that a random token is caught.
         #
         events = evaluate("&#<")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting a character value.",
-                                   [ L.Token(L.cro, "&#", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting a character value.",
+                              [ L.Token(L.cro, "&#", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity References/Character References (Negative ... no terminator)" begin
@@ -59,12 +59,12 @@
         # Check that a random token is caught.
         #
         events = evaluate("&#10<")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting ';' to end a character reference.",
-                                   [ L.Token(L.cro, "&#", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "10", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting ';' to end a character reference.",
+                              [ L.Token(L.cro, "&#", L.Location("a buffer", -1)),
+                                L.Token(L.text, "10", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity References/General Entity References (Positive)" begin
@@ -99,11 +99,11 @@
         # Check that a random token is caught.
         #
         events = evaluate("&<")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting an entity name.",
-                                   [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting an entity name.",
+                              [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity References/General Entity References (Negative ... no terminator)" begin
@@ -117,12 +117,12 @@
         # Check that a random token is caught.
         #
         events = evaluate("&a<")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting ';' to end an entity reference.",
-                                   [ L.Token(L.ero, "&", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting ';' to end an entity reference.",
+                              [ L.Token(L.ero, "&", L.Location("a buffer", -1)),
+                                L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity References/Parameter Entity References (Positive)" begin
@@ -155,11 +155,11 @@
         # Check that a random token is caught.
         #
         events = evaluate("%<")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting a parameter entity name.",
-                                   [ L.Token(L.pero, "%", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting a parameter entity name.",
+                              [ L.Token(L.pero, "%", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity References/Parameter Entity References (Negative ... no terminator)" begin
@@ -173,11 +173,11 @@
         # Check that a random token is caught.
         #
         events = evaluate("%a<")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting ';' to end a parameter entity reference.",
-                                   [ L.Token(L.pero, "%", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting ';' to end a parameter entity reference.",
+                              [ L.Token(L.pero, "%", L.Location("a buffer", -1)),
+                                L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 end

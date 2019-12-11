@@ -126,160 +126,156 @@
                          L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE>")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting a root element name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC(">", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting a root element name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC(">", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE >")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting a root element name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC(">", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting a root element name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC(">", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE [")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting a root element name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC("[", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting a root element name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC("[", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE \"root\"")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a root element name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC("\"", false, L.Location("a buffer", -1)),
-                                DC("root", false, L.Location("a buffer", -1)),
-                                DC("\"", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a root element name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC("\"", false, L.Location("a buffer", -1)),
+                           DC("root", false, L.Location("a buffer", -1)),
+                           DC("\"", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE 'root'")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a root element name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC("\'", false, L.Location("a buffer", -1)),
-                                DC("root", false, L.Location("a buffer", -1)),
-                                DC("\'", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a root element name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC("\'", false, L.Location("a buffer", -1)),
+                           DC("root", false, L.Location("a buffer", -1)),
+                           DC("\'", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE <")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting a root element name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting a root element name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Document Type Declaration (Negative ... missing TAGC.)" begin
         events = evaluate("<!DOCTYPE root")
         @test length(events) == 1
-        @test (events[1] == ME("ERROR: Expecting '>' to end a document type declaration.",
-                               [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                 L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
-                                 L.Token(L.text, "root", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events == [ ME("ERROR: Expecting '>' to end a document type declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
+                                L.Token(L.text, "root", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE root SYSTEM \"'hello.dtd'\"")
         @test length(events) == 1
-        @test (events[1] == ME("ERROR: Expecting '>' to end a document type declaration.",
-                               [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                 L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
-                                 L.Token(L.text, "root", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events == [ ME("ERROR: Expecting '>' to end a document type declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
+                                L.Token(L.text, "root", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE root PUBLIC \"'salut.dtd'\" \"'hello.dtd'\"")
         @test length(events) == 1
-        @test (events[1] == ME("ERROR: Expecting '>' to end a document type declaration.",
-                               [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                 L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
-                                 L.Token(L.text, "root", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)))
+        @test (events == [ ME("ERROR: Expecting '>' to end a document type declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
+                                L.Token(L.text, "root", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Document Type Declaration (Negative ... missing string following PUBLIC or SYSTEM.)" begin
         events = evaluate("<!DOCTYPE a PUBLIC")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end a document type declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "a", L.Location("a buffer", -1)) ],
-                                   L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a document type declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
+                                L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         # Make sure the trailing white space doesn't throw things off.
         #
         events = evaluate("<!DOCTYPE a PUBLIC ")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end a document type declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "a", L.Location("a buffer", -1)) ],
-                                   L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a document type declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
+                                L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE a PUBLIC>")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                DTDStart("a", nothing, L.Location("a buffer", -1)),
-                                DTDEnd(L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           DTDStart("a", nothing, L.Location("a buffer", -1)),
+                           DTDEnd(L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE a PUBLIC[")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                DTDStart("a", nothing, L.Location("a buffer", -1)),
-                                DTDInternalStart(L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           DTDStart("a", nothing, L.Location("a buffer", -1)),
+                           DTDInternalStart(L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE a SYSTEM")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end a document type declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "a", L.Location("a buffer", -1)) ],
-                                   L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a document type declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
+                                L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         # Make sure the trailing white space doesn't throw things off.
         #
         events = evaluate("<!DOCTYPE a SYSTEM ")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end a document type declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "a", L.Location("a buffer", -1)) ],
-                                   L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a document type declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "DOCTYPE", L.Location("a buffer", -1)),
+                                L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE a SYSTEM>")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                DTDStart("a", nothing, L.Location("a buffer", -1)),
-                                DTDEnd(L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           DTDStart("a", nothing, L.Location("a buffer", -1)),
+                           DTDEnd(L.Location("a buffer", -1)) ])
 
         events = evaluate("<!DOCTYPE a SYSTEM[")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                DTDStart("a", nothing, L.Location("a buffer", -1)),
-                                DTDInternalStart(L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           DTDStart("a", nothing, L.Location("a buffer", -1)),
+                           DTDInternalStart(L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Document Type Declaration (Negative ... missing white space between public and system identifier.)" begin
         events = evaluate("<!DOCTYPE root PUBLIC \"'salut.dtd'\"\"'hello.dtd'\">")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting white space following a public identifier.",
-                                   [ ], L.Location("a buffer", -1)),
-                                DTDStart("root", ExternalID("'salut.dtd'", "'hello.dtd'", L.Location("a buffer", -1)),
-                                         L.Location("a buffer", -1)),
-                                DTDEnd(L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting white space following a public identifier.",
+                              [ ], L.Location("a buffer", -1)),
+                           DTDStart("root", ExternalID("'salut.dtd'", "'hello.dtd'", L.Location("a buffer", -1)),
+                                    L.Location("a buffer", -1)),
+                           DTDEnd(L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Document Type Declaration (Negative ... missing system identifier following public identifier.)" begin
         events = evaluate("<!DOCTYPE root PUBLIC \"'salut.dtd'\" >")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a system identifier following a public identifier.",
-                                   [ ], L.Location("a buffer", -1)),
-                                DTDStart("root", ExternalID("'salut.dtd'", nothing, L.Location("a buffer", -1)),
-                                         L.Location("a buffer", -1)),
-                                DTDEnd(L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a system identifier following a public identifier.",
+                              [ ], L.Location("a buffer", -1)),
+                           DTDStart("root", ExternalID("'salut.dtd'", nothing, L.Location("a buffer", -1)),
+                                    L.Location("a buffer", -1)),
+                           DTDEnd(L.Location("a buffer", -1)) ])
     end
 end

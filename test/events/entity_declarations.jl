@@ -73,106 +73,106 @@
                          L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY>")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting an entity name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC(">", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting an entity name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC(">", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY >")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting an entity name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC(">", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting an entity name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC(">", false, L.Location("a buffer", -1)) ])
 
         # This one is a little weird: we're picking up "PUBLIC" as the entity name. I'll have to figure out later if
         # that's allowed or not, but there doesn't appear to be anything in the specification that forbids it.
         #
         events = evaluate("<!ENTITY PUBLIC")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("PUBLIC", L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("PUBLIC", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY \"\"")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting an entity name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC("\"", false, L.Location("a buffer", -1)),
-                                DC("\"", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting an entity name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC("\"", false, L.Location("a buffer", -1)),
+                           DC("\"", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY ''")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting an entity name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC("'", false, L.Location("a buffer", -1)),
-                                DC("'", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting an entity name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC("'", false, L.Location("a buffer", -1)),
+                           DC("'", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY <")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting an entity name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting an entity name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity Declarations, Internal General (Negative ... missing entity value.)" begin
         events = evaluate("<!ENTITY e")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e ")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e <")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity Declarations, Internal General (Negative ... missing TAGC.)" begin
         events = evaluate("<!ENTITY e \"value\"")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                InternalGeneral("e", "value", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           InternalGeneral("e", "value", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e \"value\" ")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                InternalGeneral("e", "value", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           InternalGeneral("e", "value", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e \"value\" <")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                InternalGeneral("e", "value", L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           InternalGeneral("e", "value", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity Declarations, Internal Parameter (Positive)" begin
@@ -211,106 +211,106 @@
                          L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY %>")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting an entity name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC(">", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting an entity name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC(">", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % >")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting an entity name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC(">", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting an entity name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC(">", false, L.Location("a buffer", -1)) ])
 
         # This one is a little weird: we're picking up "PUBLIC" as the entity name. I'll have to figure out later if
         # that's allowed or not, but there doesn't appear to be anything in the specification that forbids it.
         #
         events = evaluate("<!ENTITY % PUBLIC")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("PUBLIC", L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("PUBLIC", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % \"\"")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting an entity name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC("\"", false, L.Location("a buffer", -1)),
-                                DC("\"", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting an entity name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC("\"", false, L.Location("a buffer", -1)),
+                           DC("\"", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % ''")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting an entity name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                DC("'", false, L.Location("a buffer", -1)),
-                                DC("'", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting an entity name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           DC("'", false, L.Location("a buffer", -1)),
+                           DC("'", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % <")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting an entity name.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting an entity name.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity Declarations, Internal Parameter (Negative ... missing entity value.)" begin
         events = evaluate("<!ENTITY % e")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e ")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e <")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity Declarations, Internal Parameter (Negative ... missing TAGC.)" begin
         events = evaluate("<!ENTITY % e \"value\"")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                InternalParameter("e", "value", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           InternalParameter("e", "value", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e \"value\" ")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                InternalParameter("e", "value", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           InternalParameter("e", "value", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e \"value\" <")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                InternalParameter("e", "value", L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           InternalParameter("e", "value", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity Declarations, External General (Positive)" begin
@@ -395,131 +395,131 @@
 
     @testset "Events/Entity Declarations, External General (Negative ... missing entity value.)" begin
         events = evaluate("<!ENTITY e PUBLIC")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC ")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC <")
-        @test length(events) >= 5
-        @test (events[1:5] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 5
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC \"salut.ent\"")
-        @test length(events) >= 5
-        @test (events[1:5] == [ ME("ERROR: Expecting white space following a public identifier.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a system identifier following a public identifier.",
-                                   [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "salut.ent", nothing, L.Location("a buffer", -1)) ])
+        @test length(events) == 5
+        @test (events == [ ME("ERROR: Expecting white space following a public identifier.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a system identifier following a public identifier.",
+                              [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "salut.ent", nothing, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC \"salut.ent\" ")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a system identifier following a public identifier.",
-                                   [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "salut.ent", nothing, L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a system identifier following a public identifier.",
+                              [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "salut.ent", nothing, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC \"salut.ent\" <")
-        @test length(events) >= 5
-        @test (events[1:5] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a system identifier following a public identifier.",
-                                   [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "salut.ent", nothing, L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 5
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a system identifier following a public identifier.",
+                              [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "salut.ent", nothing, L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e SYSTEM")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e SYSTEM ")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e SYSTEM <")
-        @test length(events) >= 5
-        @test (events[1:5] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 5
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity Declarations, External General (Negative ... missing TAGC.)" begin
         events = evaluate("<!ENTITY e PUBLIC \"salut.ent\" \"hello.ent\"")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC \"salut.ent\" \"hello.ent\" ")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC \"salut.ent\" \"hello.ent\" <")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset ("""Events/Entity Declarations, External General
                   (Negative ... missing white space between public and system identifier.)""") begin
         events = evaluate("<!ENTITY e PUBLIC \"salut.ent\"\"hello.ent\"")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting white space following a public identifier.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ] )
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting white space following a public identifier.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ] )
     end
 
     @testset "Events/Entity Declarations, External Parameter (Positive)" begin
@@ -601,150 +601,150 @@
 
     @testset "Events/Entity Declarations, External Parameter (Negative ... missing entity value.)" begin
         events = evaluate("<!ENTITY % e PUBLIC")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e PUBLIC ")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e PUBLIC <")
-        @test length(events) >= 5
-        @test (events[1:5] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 5
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e PUBLIC \"salut.ent\"")
-        @test length(events) >= 5
-        @test (events[1:5] == [ ME("ERROR: Expecting white space following a public identifier.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a system identifier following a public identifier.",
-                                   [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", "salut.ent", nothing, L.Location("a buffer", -1)) ])
+        @test length(events) == 5
+        @test (events == [ ME("ERROR: Expecting white space following a public identifier.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a system identifier following a public identifier.",
+                              [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", "salut.ent", nothing, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e PUBLIC \"salut.ent\" ")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a system identifier following a public identifier.",
-                                   [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", "salut.ent", nothing, L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a system identifier following a public identifier.",
+                              [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", "salut.ent", nothing, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e PUBLIC \"salut.ent\" <")
-        @test length(events) >= 5
-        @test (events[1:5] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a system identifier following a public identifier.",
-                                   [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", "salut.ent", nothing, L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 5
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a system identifier following a public identifier.",
+                              [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", "salut.ent", nothing, L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e SYSTEM")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e SYSTEM ")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e SYSTEM <")
-        @test length(events) >= 5
-        @test (events[1:5] == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 5
+        @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset ("""Events/Entity Declarations, External Parameter
                   (Negative ... missing white space between public and system identifier.)""") begin
         events = evaluate("<!ENTITY % e PUBLIC \"salut.ent\"\"hello.ent\"")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting white space following a public identifier.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ] )
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting white space following a public identifier.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ] )
     end
 
     @testset "Events/Entity Declarations, External Parameter (Negative ... missing TAGC.)" begin
         events = evaluate("<!ENTITY % e PUBLIC \"salut.ent\" \"hello.ent\"")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e PUBLIC \"salut.ent\" \"hello.ent\" ")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY % e PUBLIC \"salut.ent\" \"hello.ent\" <")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity Declarations, External Parameter (Negative ... attempted notation specification)" begin
         events = evaluate("<!ENTITY % a PUBLIC \"hello.ent\" \"salut.ent\" NDATA notation>")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: A parameter entity cannot have a notation.",
-                                   [ L.Token(L.text, "notation", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("a", "hello.ent", "salut.ent", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: A parameter entity cannot have a notation.",
+                              [ L.Token(L.text, "notation", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("a", "hello.ent", "salut.ent", L.Location("a buffer", -1)) ])
     end
 
     @testset ("""Events/Entity Declarations, External Parameter
                   (Negative ... missing white space between public and system identifier.)""") begin
         events = evaluate("<!ENTITY % e PUBLIC \"salut.ent\"\"hello.ent\"")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting white space following a public identifier.", [ ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalParameter("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ] )
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting white space following a public identifier.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ] )
     end
 
     @testset "Events/Entity Declarations, External Data (Positive)" begin
@@ -777,86 +777,86 @@
 
     @testset "Events/Entity Declarations, External Data (Negative ... missing TAGC.)" begin
         events = evaluate("<!ENTITY e PUBLIC \"salut.ent\" \"hello.ent\" NDATA notation")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralData("e", "salut.ent", "hello.ent", "notation", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralData("e", "salut.ent", "hello.ent", "notation", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC \"salut.ent\" \"hello.ent\" NDATA notation ")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralData("e", "salut.ent", "hello.ent", "notation", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralData("e", "salut.ent", "hello.ent", "notation", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC \"salut.ent\" \"hello.ent\" NDATA notation <")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralData("e", "salut.ent", "hello.ent", "notation", L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralData("e", "salut.ent", "hello.ent", "notation", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity Declarations, External Data (Negative ... invalid or absent notation name)" begin
         events = evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA")
-        @test length(events) >= 3
-        @test (events[1:3] == [ ME("ERROR: Expecting a notation name.",
-                                   [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "hello.ent", "salut.ent", L.Location("a buffer", -1)) ])
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: Expecting a notation name.",
+                              [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "hello.ent", "salut.ent", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA>")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting a notation name.",
-                                   [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "hello.ent", "salut.ent", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting a notation name.",
+                              [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "hello.ent", "salut.ent", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA >")
-        @test length(events) >= 2
-        @test (events[1:2] == [ ME("ERROR: Expecting a notation name.",
-                                   [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "hello.ent", "salut.ent", L.Location("a buffer", -1)) ])
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: Expecting a notation name.",
+                              [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "hello.ent", "salut.ent", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA \"notation\">")
-        @test length(events) >= 7
-        @test (events[1:7] == [ ME("ERROR: Expecting a notation name.",
-                                   [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "hello.ent", "salut.ent", L.Location("a buffer", -1)),
-                                DC("\"", false, L.Location("a buffer", -1)),
-                                DC("notation", false, L.Location("a buffer", -1)),
-                                DC("\"", false, L.Location("a buffer", -1)),
-                                DC(">", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 7
+        @test (events == [ ME("ERROR: Expecting a notation name.",
+                              [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "hello.ent", "salut.ent", L.Location("a buffer", -1)),
+                           DC("\"", false, L.Location("a buffer", -1)),
+                           DC("notation", false, L.Location("a buffer", -1)),
+                           DC("\"", false, L.Location("a buffer", -1)),
+                           DC(">", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA \'notation\'>")
-        @test length(events) >= 7
-        @test (events[1:7] == [ ME("ERROR: Expecting a notation name.",
-                                   [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "hello.ent", "salut.ent", L.Location("a buffer", -1)),
-                                DC("'", false, L.Location("a buffer", -1)),
-                                DC("notation", false, L.Location("a buffer", -1)),
-                                DC("'", false, L.Location("a buffer", -1)),
-                                DC(">", false, L.Location("a buffer", -1)) ])
+        @test length(events) == 7
+        @test (events == [ ME("ERROR: Expecting a notation name.",
+                              [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "hello.ent", "salut.ent", L.Location("a buffer", -1)),
+                           DC("'", false, L.Location("a buffer", -1)),
+                           DC("notation", false, L.Location("a buffer", -1)),
+                           DC("'", false, L.Location("a buffer", -1)),
+                           DC(">", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!ENTITY e PUBLIC \"hello.ent\" \"salut.ent\" NDATA <")
-        @test length(events) >= 4
-        @test (events[1:4] == [ ME("ERROR: Expecting a notation name.",
-                                   [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting '>' to end an entity declaration.",
-                                   [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                     L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                                ExternalGeneralText("e", "hello.ent", "salut.ent", L.Location("a buffer", -1)),
-                                ME("ERROR: Expecting an element name.",
-                                   [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: Expecting a notation name.",
+                              [ L.Token(L.text, "NDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end an entity declaration.",
+                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                                L.Token(L.text, "ENTITY", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "hello.ent", "salut.ent", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.",
+                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 end
