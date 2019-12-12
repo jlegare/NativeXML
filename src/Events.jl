@@ -218,8 +218,8 @@ end
 function cdata_marked_section(mdo, tokens, channel)
     dso = take!(tokens) # Consume the DSO that got us here.
 
-    if is_keyword_case_insensitive("CDATA", tokens)
-        if !is_keyword("CDATA", tokens)
+    if is_keyword_case_insensitive("CDATA", tokens, channel)
+        if !is_keyword("CDATA", tokens, channel)
             put!(channel, MarkupError("ERROR: The keyword 'CDATA' must be uppercased.", [ mdo, dso ], Lexical.location_of(mdo)))
         end
 
@@ -425,7 +425,7 @@ function entity_declaration(mdo, tokens, channel)
 
         else
             consume_white_space!(tokens)
-            if is_keyword("NDATA", tokens)
+            if is_keyword("NDATA", tokens, channel)
                 ndata = take!(tokens)        # Consume the NDATA keyword ...
                 consume_white_space!(tokens) # ... but discard any following white space.
 
@@ -580,51 +580,51 @@ function markup_declaration(tokens, channel)
     elseif is_token(Lexical.com, tokens)
         comment(mdo, tokens, channel)
 
-    elseif is_keyword("ATTLIST", tokens)
+    elseif is_keyword("ATTLIST", tokens, channel)
         # This is temporary until I write the attribute declaration parser.
         #
         put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
 
-    elseif is_keyword("DOCTYPE", tokens)
+    elseif is_keyword("DOCTYPE", tokens, channel)
         document_type_declaration(mdo, tokens, channel)
 
-    elseif is_keyword("ELEMENT", tokens)
+    elseif is_keyword("ELEMENT", tokens, channel)
         # This is temporary until I write the element declaration parser.
         #
         put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
 
-    elseif is_keyword("ENTITY", tokens)
+    elseif is_keyword("ENTITY", tokens, channel)
         entity_declaration(mdo, tokens, channel)
 
-    elseif is_keyword("NOTATION", tokens)
+    elseif is_keyword("NOTATION", tokens, channel)
         notation_declaration(mdo, tokens, channel)
 
     else
-        if is_keyword_case_insensitive("ATTLIST", tokens)
+        if is_keyword_case_insensitive("ATTLIST", tokens, channel)
             put!(channel, MarkupError("ERROR: The keyword 'ATTLIST' must be uppercased.", [ ], Lexical.location_of(mdo)))
 
-        elseif is_keyword_case_insensitive("DOCTYPE", tokens)
+        elseif is_keyword_case_insensitive("DOCTYPE", tokens, channel)
             # Emit an error, but keep going: we might be able to make sense of this.
             #
             put!(channel, MarkupError("ERROR: The keyword 'DOCTYPE' must be uppercased.", [ ], Lexical.location_of(mdo)))
             document_type_declaration(mdo, tokens, channel)
 
-        elseif is_keyword_case_insensitive("ELEMENT", tokens)
+        elseif is_keyword_case_insensitive("ELEMENT", tokens, channel)
             put!(channel, MarkupError("ERROR: The keyword 'ELEMENT' must be uppercased.", [ ], Lexical.location_of(mdo)))
 
-        elseif is_keyword_case_insensitive("ENTITY", tokens)
+        elseif is_keyword_case_insensitive("ENTITY", tokens, channel)
             # Emit an error, but keep going: we might be able to make sense of this.
             #
             put!(channel, MarkupError("ERROR: The keyword 'ENTITY' must be uppercased.", [ ], Lexical.location_of(mdo)))
             entity_declaration(mdo, tokens, channel)
 
-        elseif is_keyword_case_insensitive("NOTATION", tokens)
+        elseif is_keyword_case_insensitive("NOTATION", tokens, channel)
             put!(channel, MarkupError("ERROR: The keyword 'NOTATION' must be uppercased.", [ ], Lexical.location_of(mdo)))
 
-        elseif is_keyword_case_insensitive("SHORTREF", tokens)
+        elseif is_keyword_case_insensitive("SHORTREF", tokens, channel)
             put!(channel, MarkupError("ERROR: The keyword 'SHORTREF' is not available in XML.", [ ], Lexical.location_of(mdo)))
 
-        elseif is_keyword_case_insensitive("USEMAP", tokens)
+        elseif is_keyword_case_insensitive("USEMAP", tokens, channel)
             put!(channel, MarkupError("ERROR: The keyword 'USEMAP' is not available in XML.", [ ], Lexical.location_of(mdo)))
 
         else
@@ -669,7 +669,7 @@ function processing_instruction(tokens, channel)
     pio = take!(tokens) # Consume the PIO token that got us here.
 
     if is_token(Lexical.text, tokens)
-        if is_keyword_case_insensitive("XML", tokens)
+        if is_keyword_case_insensitive("XML", tokens, channel)
             put!(channel, MarkupError("ERROR: A PI target cannot be any case variant of 'XML'.", [ pio ],
                                       Lexical.location_of(pio)))
         end
@@ -845,7 +845,7 @@ end
 
 
 function collect_external_identifier(mdo, tokens, is_strict, channel)
-    if is_keyword("SYSTEM", tokens)
+    if is_keyword("SYSTEM", tokens, channel)
         system = take!(tokens)
         system_identifier = collect_string(Lexical.location_of(system), tokens, channel)
 
@@ -858,7 +858,7 @@ function collect_external_identifier(mdo, tokens, is_strict, channel)
             return ExternalIdentifier(nothing, stringify(system_identifier), Lexical.location_of(system))
         end
 
-    elseif is_keyword("PUBLIC", tokens)
+    elseif is_keyword("PUBLIC", tokens, channel)
         public = take!(tokens)
         public_identifier = collect_string(Lexical.location_of(public), tokens, channel)
         if isnothing(public_identifier)
@@ -975,7 +975,7 @@ function is_eoi(tokens)
 end
 
 
-function is_keyword(keyword, tokens)
+function is_keyword(keyword, tokens, channel)
     if is_token(Lexical.text, tokens)
         text = fetch(tokens)
 
@@ -987,7 +987,7 @@ function is_keyword(keyword, tokens)
 end
 
 
-function is_keyword_case_insensitive(keyword, tokens)
+function is_keyword_case_insensitive(keyword, tokens, channel)
     if is_token(Lexical.text, tokens)
         text = fetch(tokens)
 
