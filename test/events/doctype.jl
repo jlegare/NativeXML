@@ -196,6 +196,24 @@
                                 L.Token(L.text, "root", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
+    @testset "Events/Document Type Declaration (Negative ... lowercased keywords.)" begin
+        events = evaluate("<!doctype root system \"'hello.dtd'\">")
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: The keyword 'doctype' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: The keyword 'system' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           DTDStart("root", ExternalID(nothing, "'hello.dtd'", L.Location("a buffer", -1)),
+                                    L.Location("a buffer", -1)),
+                           DTDEnd(L.Location("a buffer", -1)) ])
+
+        events = evaluate("<!doctype root public \"'salut.dtd'\" \"'hello.dtd'\">")
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: The keyword 'doctype' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: The keyword 'public' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           DTDStart("root", ExternalID("'salut.dtd'", "'hello.dtd'", L.Location("a buffer", -1)),
+                                    L.Location("a buffer", -1)),
+                           DTDEnd(L.Location("a buffer", -1)) ])
+    end
+
     @testset "Events/Document Type Declaration (Negative ... missing string following PUBLIC or SYSTEM.)" begin
         events = evaluate("<!DOCTYPE a PUBLIC")
         @test length(events) == 2

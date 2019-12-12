@@ -525,6 +525,20 @@
                               [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
+    @testset "Events/Entity Declarations, External General (Negative ... lowercased keywords.)" begin
+        events = evaluate("<!entity e public \"salut.ent\" \"hello.ent\">")
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: The keyword 'entity' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: The keyword 'public' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ])
+
+        events = evaluate("<!entity e system \"hello.ent\">")
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: The keyword 'entity' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: The keyword 'system' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ExternalGeneralText("e", nothing, "hello.ent", L.Location("a buffer", -1)) ])
+    end
+
     @testset ("""Events/Entity Declarations, External General
                   (Negative ... missing white space between public and system identifier.)""") begin
         events = evaluate("<!ENTITY e PUBLIC \"salut.ent\"\"hello.ent\"")
@@ -742,6 +756,20 @@
                               [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
     end
 
+    @testset "Events/Entity Declarations, External General (Negative ... lowercased keywords.)" begin
+        events = evaluate("<!entity % e public \"salut.ent\" \"hello.ent\">")
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: The keyword 'entity' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: The keyword 'public' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", "salut.ent", "hello.ent", L.Location("a buffer", -1)) ])
+
+        events = evaluate("<!entity % e system \"hello.ent\">")
+        @test length(events) == 3
+        @test (events == [ ME("ERROR: The keyword 'entity' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: The keyword 'system' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ExternalParameter("e", nothing, "hello.ent", L.Location("a buffer", -1)) ])
+    end
+
     @testset "Events/Entity Declarations, External Parameter (Negative ... attempted notation specification)" begin
         events = evaluate("<!ENTITY % a PUBLIC \"hello.ent\" \"salut.ent\" NDATA notation>")
         @test length(events) == 2
@@ -812,6 +840,22 @@
                            ExternalGeneralData("e", "salut.ent", "hello.ent", "notation", L.Location("a buffer", -1)),
                            ME("ERROR: Expecting an element name.",
                               [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Entity Declarations, External Data (Negative ... lowercased keywords)" begin
+        events = evaluate("<!entity e public \"salut.ent\" \"hello.ent\" ndata notation>")
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: The keyword 'entity' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: The keyword 'public' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: The keyword 'ndata' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ExternalGeneralData("e", "salut.ent", "hello.ent", "notation", L.Location("a buffer", -1)) ])
+
+        events = evaluate("<!entity e system \"hello.ent\" ndata notation>")
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: The keyword 'entity' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: The keyword 'system' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: The keyword 'ndata' must be uppercased.", [ ], L.Location("a buffer", -1)),
+                           ExternalGeneralData("e", nothing, "hello.ent", "notation", L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Entity Declarations, External Data (Negative ... invalid or absent notation name)" begin
