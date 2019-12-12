@@ -82,9 +82,7 @@
                     DC("SDATA", false, L.Location("a buffer", -1)) ])
 
         @test (evaluate("<![cdata")
-               == [ ME("ERROR: The keyword 'CDATA' must be uppercased.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+               == [ ME("ERROR: The keyword 'cdata' must be uppercased.", [ ], L.Location("a buffer", -1)),
                     ME("ERROR: Expecting '[' to open a CDATA marked section.",
                        [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                          L.Token(L.dso, "[", L.Location("a buffer", -1)),

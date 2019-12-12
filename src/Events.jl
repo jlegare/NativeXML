@@ -218,11 +218,7 @@ end
 function cdata_marked_section(mdo, tokens, channel)
     dso = take!(tokens) # Consume the DSO that got us here.
 
-    if is_keyword_case_insensitive("CDATA", tokens, channel)
-        if !is_keyword("CDATA", tokens, channel)
-            put!(channel, MarkupError("ERROR: The keyword 'CDATA' must be uppercased.", [ mdo, dso ], Lexical.location_of(mdo)))
-        end
-
+    if is_keyword("CDATA", tokens, channel)
         text = take!(tokens) # Consume the CDATA keyword.
 
         if is_token(Lexical.dso, tokens)
@@ -600,31 +596,10 @@ function markup_declaration(tokens, channel)
         notation_declaration(mdo, tokens, channel)
 
     else
-        if is_keyword_case_insensitive("ATTLIST", tokens, channel)
-            put!(channel, MarkupError("ERROR: The keyword 'ATTLIST' must be uppercased.", [ ], Lexical.location_of(mdo)))
-
-        elseif is_keyword_case_insensitive("DOCTYPE", tokens, channel)
-            # Emit an error, but keep going: we might be able to make sense of this.
-            #
-            put!(channel, MarkupError("ERROR: The keyword 'DOCTYPE' must be uppercased.", [ ], Lexical.location_of(mdo)))
-            document_type_declaration(mdo, tokens, channel)
-
-        elseif is_keyword_case_insensitive("ELEMENT", tokens, channel)
-            put!(channel, MarkupError("ERROR: The keyword 'ELEMENT' must be uppercased.", [ ], Lexical.location_of(mdo)))
-
-        elseif is_keyword_case_insensitive("ENTITY", tokens, channel)
-            # Emit an error, but keep going: we might be able to make sense of this.
-            #
-            put!(channel, MarkupError("ERROR: The keyword 'ENTITY' must be uppercased.", [ ], Lexical.location_of(mdo)))
-            entity_declaration(mdo, tokens, channel)
-
-        elseif is_keyword_case_insensitive("NOTATION", tokens, channel)
-            put!(channel, MarkupError("ERROR: The keyword 'NOTATION' must be uppercased.", [ ], Lexical.location_of(mdo)))
-
-        elseif is_keyword_case_insensitive("SHORTREF", tokens, channel)
+        if is_keyword("shortref", tokens, channel)
             put!(channel, MarkupError("ERROR: The keyword 'SHORTREF' is not available in XML.", [ ], Lexical.location_of(mdo)))
 
-        elseif is_keyword_case_insensitive("USEMAP", tokens, channel)
+        elseif is_keyword("usemap", tokens, channel)
             put!(channel, MarkupError("ERROR: The keyword 'USEMAP' is not available in XML.", [ ], Lexical.location_of(mdo)))
 
         else
@@ -669,9 +644,9 @@ function processing_instruction(tokens, channel)
     pio = take!(tokens) # Consume the PIO token that got us here.
 
     if is_token(Lexical.text, tokens)
-        if is_keyword_case_insensitive("XML", tokens, channel)
-            put!(channel, MarkupError("ERROR: A PI target cannot be any case variant of 'XML'.", [ pio ],
-                                      Lexical.location_of(pio)))
+        if is_keyword("XML", tokens, false, channel)
+            put!(channel, MarkupError("ERROR: A PI target cannot be any case variant of 'XML'.",
+                                      [ pio ], Lexical.location_of(pio)))
         end
 
         target = take!(tokens) # See [1], § 2.6 ... the PI target is required.
@@ -976,22 +951,28 @@ end
 
 
 function is_keyword(keyword, tokens, channel)
-    if is_token(Lexical.text, tokens)
-        text = fetch(tokens)
-
-        return text.value == keyword
-
-    else
-        return false
-    end
+    is_keyword(keyword, tokens, true, channel)
 end
 
 
-function is_keyword_case_insensitive(keyword, tokens, channel)
+function is_keyword(keyword, tokens, case_sensitive, channel)
     if is_token(Lexical.text, tokens)
         text = fetch(tokens)
 
-        return lowercase(text.value) == lowercase(keyword)
+        if text.value == keyword
+            return true
+
+        elseif lowercase(text.value) == lowercase(keyword)
+            if case_sensitive
+                put!(channel, MarkupError("ERROR: The keyword '" * text.value * "' must be uppercased.",
+                                          [ ], Lexical.location_of(text)))
+            end
+
+            return true
+
+        else
+            return false
+        end
 
     else
         return false
