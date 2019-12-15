@@ -84,6 +84,11 @@
 
         # Look for the remaining SGML keywords.
         #
+        events = evaluate("<!sgml")
+        @test length(events) == 2
+        @test (events == [ ME("ERROR: The keyword 'SGML' is not available in XML.", [ ], L.Location("a buffer", -1)),
+                           DC("sgml", false, L.Location("a buffer", -1)) ])
+
         events = evaluate("<!shortref")
         @test length(events) == 2
         @test (events == [ ME("ERROR: The keyword 'SHORTREF' is not available in XML.", [ ], L.Location("a buffer", -1)),

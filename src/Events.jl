@@ -593,7 +593,10 @@ function markup_declaration(tokens, channel)
         notation_declaration(mdo, tokens, channel)
 
     else
-        if is_keyword("shortref", tokens, channel)
+        if is_keyword("sgml", tokens, channel)
+            put!(channel, MarkupError("ERROR: The keyword 'SGML' is not available in XML.", [ ], Lexical.location_of(mdo)))
+
+        elseif is_keyword("shortref", tokens, channel)
             put!(channel, MarkupError("ERROR: The keyword 'SHORTREF' is not available in XML.", [ ], Lexical.location_of(mdo)))
 
         elseif is_keyword("usemap", tokens, channel)
