@@ -20,7 +20,7 @@
         @test evaluate("?")  == [ L.Token(L.opt, "?", L.Location("a buffer", -1)) ]
         @test evaluate("*")  == [ L.Token(L.rep, "*", L.Location("a buffer", -1)) ]
         @test evaluate("+")  == [ L.Token(L.plus, "+", L.Location("a buffer", -1)) ]
-        @test evaluate("-")  == [ L.Token(L.minus, "-", L.Location("a buffer", -1)) ]
+        @test evaluate("-")  == [ L.Token(L.text, "-", L.Location("a buffer", -1)) ]
         @test evaluate("&")  == [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ]
         @test evaluate("%")  == [ L.Token(L.pero, "%", L.Location("a buffer", -1)) ]
         @test evaluate(";")  == [ L.Token(L.refc, ";", L.Location("a buffer", -1)) ]

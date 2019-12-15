@@ -281,16 +281,13 @@ function comment(mdo, tokens, channel)
         if is_token(Lexical.com, tokens)
             tail = take!(tokens)
 
+            # We cannot encounter EOI here ... if we hit "--" at EOI, it gets classified as TEXT, not COM. See
+            # consume_until() in src/Lexical.jl
+            #
             if is_token(Lexical.tagc, tokens)
                 take!(tokens)
                 put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]))
                 put!(channel, CommentEnd(Lexical.location_of(com)))
-                break
-
-            elseif is_eoi(tokens)
-                put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]))
-                put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], locations_of(com, consumed)[:tail]))
-                put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]))
                 break
 
             else
@@ -973,6 +970,68 @@ function is_keyword(keyword, tokens, case_sensitive, channel)
         else
             return false
         end
+
+    else
+        return false
+    end
+end
+
+
+function is_name(tokens)
+    function is_name_start_char(c)
+        # See [1], § 2.3, production [4].
+        #
+        #       ":"             | [A-Z]           | "_"             | [a-z]
+        #     | [#xC0-#xD6]     | [#xD8-#xF6]     | [#xF8-#x2FF]    | [#x370-#x37D]   | [#x37F-#x1FFF]
+        #     | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF]
+        #     | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
+        #
+        # The ranges are split solely for readability.
+        #
+        if c == ':' || c ∈ 'A':'Z' || c ∈ 'a':'z'
+            return true
+
+        elseif Int(c) ∈ 0xc0:0xd6 || Int(c) ∈ 0xd8:0xf6 || Int(c) ∈ 0xf8:0x2ff || Int(c) ∈ 0x370:0x37d || Int(c) ∈ 0x37f:0x1fff
+            return true
+
+        elseif Int(c) ∈ 0x200c:0x200d || Int(c) ∈ 0x2070:0x218f || Int(c) ∈ 0x2c00:0x2fef || Int(c) ∈ 0x3001:0xd7ff
+            return true
+
+        elseif Int(c) ∈ 0xf900:0xfdcf || Int(c) ∈ 0xfdf0:0xfffd || Int(c) ∈ 0x10000:0xeffff
+            return true
+
+        else
+            return false
+        end
+    end
+
+
+    function is_name_char(c)
+        # See [1], § 2.3, production [4a].
+        #
+        #       NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
+        #
+        # The ranges are split solely for readability.
+        #
+        if is_name_start_char(c)
+            return true
+
+        elseif c == '-' || c == '.' || c ∈ '0':'9' || Int(c) == 0xb7
+            return true
+
+        elseif Int(c) ∈ 0x300:0x36f || Int(c) ∈ 0x203f:0x2040
+            return true
+
+        else
+            return false
+        end
+    end
+
+
+    if is_token(Lexical.text, tokens)
+        text = fetch(tokens)
+
+        return all(vcat(is_name_start_char(text.value[1]), map(is_name_char, collect(text.value[nextind(text.value, 1):end]))))
 
     else
         return false

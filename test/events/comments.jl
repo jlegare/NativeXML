@@ -75,7 +75,7 @@
                                        ME("ERROR: Expecting '-->' to end a comment.", [ ], L.Location("a buffer", -1)),
                                        CommentEnd(true, L.Location("a buffer", -1)) ])
         @test (evaluate("<!--x--") == [ CommentStart(L.Location("a buffer", -1)),
-                                        DC("x", L.Location("a buffer", -1)),
+                                        DC("x--", L.Location("a buffer", -1)),
                                         ME("ERROR: Expecting '-->' to end a comment.", [ ], L.Location("a buffer", -1)),
                                         CommentEnd(true, L.Location("a buffer", -1)) ])
     end
