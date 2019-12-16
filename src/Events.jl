@@ -422,7 +422,7 @@ function entity_declaration(mdo, tokens, channel)
                 ndata = take!(tokens)        # Consume the NDATA keyword ...
                 consume_white_space!(tokens) # ... but discard any following white space.
 
-                if is_token(Lexical.text, tokens)
+                if is_name(tokens)
                     ndata_name = take!(tokens)
 
                     return ( external_identifier = external_identifier, entity_value = nothing, ndata_name =  ndata_name )
@@ -613,7 +613,7 @@ function notation_declaration(mdo, tokens, channel)
     notation = take!(tokens)      # Consume the NOTATION keyword that got us here ...
     consume_white_space!(tokens)  # ... but discard any following white space.
 
-    if is_token(Lexical.text, tokens)
+    if is_name(tokens)
         notation_name = take!(tokens)
         consume_white_space!(tokens)
 
