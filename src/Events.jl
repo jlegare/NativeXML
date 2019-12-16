@@ -315,7 +315,7 @@ function document_type_declaration(mdo, tokens, channel)
     doctype = take!(tokens)      # Consume the DOCTYPE keyword that got us here ...
     consume_white_space!(tokens) # ... but discard any following white space.
 
-    if is_token(Lexical.text, tokens)
+    if is_name(tokens)
         root = take!(tokens)
         consume_white_space!(tokens)
         external_identifier = collect_external_identifier(mdo, tokens, channel)
