@@ -344,7 +344,7 @@ end
 function element_end(tokens, channel)
     etago = take!(tokens) # Consume the ETAGO that got us here.
 
-    if is_token(Lexical.text, tokens)
+    if is_name(tokens)
         name = take!(tokens)
         consume_white_space!(tokens)
 
@@ -366,7 +366,7 @@ end
 function element_start(tokens, channel)
     stago = take!(tokens) # Consume the STAGO that got us here.
 
-    if is_token(Lexical.text, tokens)
+    if is_name(tokens)
         name = take!(tokens)
         attributes = collect_attributes(tokens) # We should really slip the is_recovery flag on the ElementStart if any
                                                 # of the attributes contain a MarkupError.
@@ -773,7 +773,7 @@ function collect_attributes(tokens)
         if is_token(Lexical.ws, tokens)
             consume_white_space!(tokens)
 
-            if is_token(Lexical.text, tokens)
+            if is_name(tokens)
                 push!(attributes, collect_attribute(tokens))
 
             else
