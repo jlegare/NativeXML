@@ -643,7 +643,7 @@ end
 function processing_instruction(tokens, channel)
     pio = take!(tokens) # Consume the PIO token that got us here.
 
-    if is_token(Lexical.text, tokens)
+    if is_name(tokens)
         if is_keyword("XML", tokens, false, channel)
             put!(channel, MarkupError("ERROR: A PI target cannot be any case variant of 'XML'.",
                                       [ pio ], Lexical.location_of(pio)))
