@@ -464,7 +464,7 @@ function entity_declaration(mdo, tokens, channel)
         end
     end
 
-    if is_token(Lexical.text, tokens)
+    if is_name(tokens)
         entity_name = take!(tokens)
         consume_white_space!(tokens)
         ( external_identifier, entity_value, ndata_name ) = collect_entity_definition(entity_name, tokens, channel)
@@ -792,7 +792,7 @@ end
 function collect_entity_reference(tokens, in_attribute = false)
     ero = take!(tokens) # Consume the ERO token that got us here.
 
-    if is_token(Lexical.text, tokens)
+    if is_name(tokens)
         name = take!(tokens)
         if is_token(Lexical.refc, tokens)
             refc = take!(tokens)
@@ -879,7 +879,7 @@ end
 function collect_parameter_entity_reference(tokens)
     pero = take!(tokens) # Consume the PERO token that got us here.
 
-    if is_token(Lexical.text, tokens)
+    if is_name(tokens)
         name = take!(tokens)
         if is_token(Lexical.refc, tokens)
             refc = take!(tokens)
