@@ -559,12 +559,25 @@ end
 function marked_section(mdo, tokens, channel)
     dso = take!(tokens) # Consume the DSO that got us here.
 
+    leading = consume_white_space!(tokens) # There might be white space here. It is allowed for conditional sections,
+                                           # but disallowed for CDATA sections. For some reason.
+
     if is_keyword("CDATA", tokens, channel)
-        cdata_marked_section(mdo, dso, tokens, channel)
+        if !isnothing(leading)
+            put!(channel, MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],
+                                      Lexical.location_of(dso)))
+            put!(channel, DataContent(leading.value, true, locations_of(mdo, [ dso ])[:head]))
+
+        else
+            cdata_marked_section(mdo, dso, tokens, channel)
+        end
 
     else
         put!(channel, MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],
                                   Lexical.location_of(dso)))
+        if !isnothing(leading)
+            put!(channel, DataContent(leading.value, true, locations_of(mdo, [ dso ])[:head]))
+        end
     end
 end
 
