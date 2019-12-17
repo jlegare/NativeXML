@@ -215,57 +215,49 @@ function Base.:(==)(left::AttributeSpecification, right::AttributeSpecification)
 end
 
 
-function cdata_marked_section(mdo, tokens, channel)
-    dso = take!(tokens) # Consume the DSO that got us here.
+function cdata_marked_section(mdo, dso, tokens, channel)
+    text = take!(tokens) # Consume the CDATA keyword that got us here.
 
-    if is_keyword("CDATA", tokens, channel)
-        text = take!(tokens) # Consume the CDATA keyword.
+    if is_token(Lexical.dso, tokens)
+        take!(tokens)
 
-        if is_token(Lexical.dso, tokens)
-            take!(tokens)
+        put!(channel, CDATAMarkedSectionStart(Lexical.location_of(mdo)))
 
-            put!(channel, CDATAMarkedSectionStart(Lexical.location_of(mdo)))
+        consumed = Array{Lexical.Token, 1}()
 
-            consumed = Array{Lexical.Token, 1}()
+        while true
+            if is_token(Lexical.msc, tokens)
+                msc = take!(tokens)
 
-            while true
-                if is_token(Lexical.msc, tokens)
-                    msc = take!(tokens)
-
-                    if is_token(Lexical.tagc, tokens)
-                        take!(tokens)
-                        put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]))
-                        put!(channel, CDATAMarkedSectionEnd(Lexical.location_of(msc)))
-                        break
-
-                    else
-                        put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]))
-                        put!(channel, MarkupError("ERROR: Expecting '>' to end a CDATA marked section.", [ ],
-                                                  Lexical.location_of(msc)))
-                        put!(channel, CDATAMarkedSectionEnd(true, Lexical.location_of(msc)))
-                        break
-                    end
-
-                elseif is_eoi(tokens)
+                if is_token(Lexical.tagc, tokens)
+                    take!(tokens)
                     put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]))
-                    put!(channel, MarkupError("ERROR: Expecting ']]>' to end a CDATA marked section.", [ ],
-                                              locations_of(mdo, consumed)[:tail]))
-                    put!(channel, CDATAMarkedSectionEnd(true, locations_of(mdo, consumed)[:tail]))
+                    put!(channel, CDATAMarkedSectionEnd(Lexical.location_of(msc)))
                     break
 
                 else
-                    push!(consumed, take!(tokens))
+                    put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]))
+                    put!(channel, MarkupError("ERROR: Expecting '>' to end a CDATA marked section.", [ ],
+                                              Lexical.location_of(msc)))
+                    put!(channel, CDATAMarkedSectionEnd(true, Lexical.location_of(msc)))
+                    break
                 end
-            end
 
-        else
-            put!(channel, MarkupError("ERROR: Expecting '[' to open a CDATA marked section.", [ mdo, dso, text ],
-                                      Lexical.location_of(text)))
+            elseif is_eoi(tokens)
+                put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]))
+                put!(channel, MarkupError("ERROR: Expecting ']]>' to end a CDATA marked section.", [ ],
+                                          locations_of(mdo, consumed)[:tail]))
+                put!(channel, CDATAMarkedSectionEnd(true, locations_of(mdo, consumed)[:tail]))
+                break
+
+            else
+                push!(consumed, take!(tokens))
+            end
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],
-                                  Lexical.location_of(dso)))
+        put!(channel, MarkupError("ERROR: Expecting '[' to open a CDATA marked section.", [ mdo, dso, text ],
+                                  Lexical.location_of(text)))
     end
 end
 
@@ -564,11 +556,24 @@ function events(state::Lexical.State)
 end
 
 
+function marked_section(mdo, tokens, channel)
+    dso = take!(tokens) # Consume the DSO that got us here.
+
+    if is_keyword("CDATA", tokens, channel)
+        cdata_marked_section(mdo, dso, tokens, channel)
+
+    else
+        put!(channel, MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],
+                                  Lexical.location_of(dso)))
+    end
+end
+
+
 function markup_declaration(tokens, channel)
     mdo = take!(tokens) # Consume the MDO token that got us here.
 
     if is_token(Lexical.dso, tokens)
-        cdata_marked_section(mdo, tokens, channel)
+        marked_section(mdo, tokens, channel)
 
     elseif is_token(Lexical.com, tokens)
         comment(mdo, tokens, channel)
