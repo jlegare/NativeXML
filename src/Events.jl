@@ -218,6 +218,14 @@ end
 function cdata_marked_section(mdo, dso, tokens, channel)
     text = take!(tokens) # Consume the CDATA keyword that got us here.
 
+    ws = consume_white_space!(tokens)
+    if !isnothing(ws)
+        # Discard the white space ... there isn't much we can do with it.
+        #
+        put!(channel, MarkupError("ERROR: White space is not allowed after the 'CDATA' keyword.", [ mdo, dso, text ],
+                                  Lexical.location_of(text)))
+    end
+
     if is_token(Lexical.dso, tokens)
         take!(tokens)
 
@@ -564,13 +572,13 @@ function marked_section(mdo, tokens, channel)
 
     if is_keyword("CDATA", tokens, channel)
         if !isnothing(leading)
-            put!(channel, MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],
+            # Discard the white space ... there isn't much we can do with it.
+            #
+            put!(channel, MarkupError("ERROR: White space is not allowed before the 'CDATA' keyword.", [ mdo, dso ],
                                       Lexical.location_of(dso)))
-            put!(channel, DataContent(leading.value, true, locations_of(mdo, [ dso ])[:head]))
-
-        else
-            cdata_marked_section(mdo, dso, tokens, channel)
         end
+
+        cdata_marked_section(mdo, dso, tokens, channel)
 
     else
         put!(channel, MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],

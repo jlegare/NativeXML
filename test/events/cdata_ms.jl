@@ -51,11 +51,13 @@
         # White space is not allowed between the DSO and the CDATA token.
         #
         @test (evaluate("<![ CDATA")
-               == [ ME("ERROR: Expecting 'CDATA' to open a CDATA marked section.",
+               == [ ME("ERROR: White space is not allowed before the 'CDATA' keyword.",
                        [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                          L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                    DC(" ", true, L.Location("a buffer", -1)),
-                    DC("CDATA", false, L.Location("a buffer", -1)) ])
+                    ME("ERROR: Expecting '[' to open a CDATA marked section.",
+                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                         L.Token(L.dso, "[", L.Location("a buffer", -1)),
+                         L.Token(L.text, "CDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         @test (evaluate("<![ ")
                == [ ME("ERROR: Expecting 'CDATA' to open a CDATA marked section.",
@@ -99,12 +101,14 @@
         # White space is not allowed between the CDATA token and the second DSO.
         #
         @test (evaluate("<![CDATA [")
-               == [ ME("ERROR: Expecting '[' to open a CDATA marked section.",
+               == [ ME("ERROR: White space is not allowed after the 'CDATA' keyword.",
                        [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                          L.Token(L.dso, "[", L.Location("a buffer", -1)),
                          L.Token(L.text, "CDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                    DC(" ", true, L.Location("a buffer", -1)),
-                    DC("[", false, L.Location("a buffer", -1)), ])
+                    CDataStart(L.Location("a buffer", -1)),
+                    DC("", L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting ']]>' to end a CDATA marked section.", [ ], L.Location("a buffer", -1)),
+                    CDataEnd(true, L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/CDATA Marked Section (Negative ... no MSC)" begin
