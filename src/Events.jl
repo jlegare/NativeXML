@@ -178,6 +178,16 @@ struct ElementStart
     location    ::Lexical.Location
 end
 
+struct ConditionalSectionEnd
+    location ::Lexical.Location
+end
+
+struct ConditionalSectionStart
+    is_recovery ::Bool
+    conditional ::Union{String, EntityReferenceParameter}
+    location    ::Lexical.Location
+end
+
 # ----------------------------------------
 # FUNCTIONS
 # ----------------------------------------
@@ -307,6 +317,23 @@ function comment(mdo, tokens, channel)
         else
             push!(consumed, take!(tokens))
         end
+    end
+end
+
+
+function conditional_marked_section(mdo, dso, conditional, tokens, channel)
+    if is_token(Lexical.dso, tokens)
+        is_recovery(string::String) = !(all(map(isuppercase, collect(string))))
+        is_recovery(_) = false
+
+        take!(tokens) # Discard the DSO token that follows the conditional ... we don't need it.
+
+        put!(channel, ConditionalSectionStart(is_recovery(conditional), conditional, Lexical.location_of(mdo)))
+
+    else
+        put!(channel, MarkupError("ERROR: Expecting '[' to open a conditional marked section.", [ mdo, dso, conditional ],
+                                  Lexical.location_of(conditional)))
+        put!(channel, ConditionalSectionStart(true, conditional, Lexical.location_of(mdo)))
     end
 end
 
@@ -547,6 +574,17 @@ function events(state::Lexical.State)
             elseif is_eoi(tokens)
                 break
 
+            elseif is_token(Lexical.msc, tokens)
+                msc = take!(tokens) # We're only holding on to this for the sake of its location.
+
+                if is_token(Lexical.tagc, tokens)
+                    take!(tokens) # We don't need to hold on to this.
+                    push!(channel, ConditionalSectionEnd(Lexical.location_of(msc)))
+
+                else
+                    push!(channel, DataContent(msc.value, Lexical.location_of(msc)))
+                end
+
             else
                 if is_token(Lexical.ws, tokens)
                     ws = consume_white_space!(tokens)
@@ -579,6 +617,18 @@ function marked_section(mdo, tokens, channel)
         end
 
         cdata_marked_section(mdo, dso, tokens, channel)
+
+    elseif is_keyword("IGNORE", tokens, channel) | is_keyword("INCLUDE", tokens, channel)
+        conditional = take!(tokens)  # Consume the IGNORE/INCLUDE keyword ...
+        consume_white_space!(tokens) # ... and discard any trailing white space.
+
+        conditional_marked_section(mdo, dso, conditional.value, tokens, channel)
+
+    elseif is_token(Lexical.pero, tokens)
+        conditional = collect_parameter_entity_reference(tokens) # Consume the parameter entity reference ...
+        consume_white_space!(tokens)                             # ... and discard any trailing white space.
+
+        conditional_marked_section(mdo, dso, conditional, tokens, channel)
 
     else
         put!(channel, MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],
@@ -990,6 +1040,9 @@ function is_keyword(keyword, tokens, case_sensitive, channel)
 
         elseif lowercase(text.value) == lowercase(keyword)
             if case_sensitive
+                # All keywords in XML are uppercased. The only thing that comes close to being an exception is 'XML',
+                # where all case variants are reserved.
+                #
                 put!(channel, MarkupError("ERROR: The keyword '" * text.value * "' must be uppercased.",
                                           [ ], Lexical.location_of(text)))
             end
