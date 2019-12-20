@@ -634,7 +634,7 @@ function marked_section(mdo, tokens, channel)
         conditional_marked_section(mdo, dso, conditional, tokens, channel)
 
     else
-        put!(channel, MarkupError("ERROR: Expecting 'CDATA' to open a CDATA marked section.", [ mdo, dso ],
+        put!(channel, MarkupError("ERROR: Expecting the start of a CDATA or conditional marked section.", [ mdo, dso ],
                                   Lexical.location_of(dso)))
         if !isnothing(leading)
             put!(channel, DataContent(leading.value, true, locations_of(mdo, [ dso ])[:head]))

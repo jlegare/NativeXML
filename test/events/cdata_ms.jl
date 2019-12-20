@@ -44,7 +44,7 @@
 
     @testset "Events/CDATA Marked Section (Negative ... no section type (CDATA))" begin
         @test (evaluate("<![")
-               == [ ME("ERROR: Expecting 'CDATA' to open a CDATA marked section.",
+               == [ ME("ERROR: Expecting the start of a CDATA or conditional marked section.",
                        [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                          L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
@@ -60,7 +60,7 @@
                          L.Token(L.text, "CDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         @test (evaluate("<![ ")
-               == [ ME("ERROR: Expecting 'CDATA' to open a CDATA marked section.",
+               == [ ME("ERROR: Expecting the start of a CDATA or conditional marked section.",
                        [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                          L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
                     DC(" ", true, L.Location("a buffer", -1)) ])
@@ -69,7 +69,7 @@
         #
         events = evaluate("<![<")
         @test length(events) == 2
-        @test (events == [ ME("ERROR: Expecting 'CDATA' to open a CDATA marked section.",
+        @test (events == [ ME("ERROR: Expecting the start of a CDATA or conditional marked section.",
                               [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                                 L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
                            ME("ERROR: Expecting an element name.",
@@ -78,7 +78,7 @@
 
     @testset "Events/CDATA Marked Section (Negative ... wrong section type (CDATA))" begin
         @test (evaluate("<![SDATA")
-               == [ ME("ERROR: Expecting 'CDATA' to open a CDATA marked section.",
+               == [ ME("ERROR: Expecting the start of a CDATA or conditional marked section.",
                        [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                          L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
                     DC("SDATA", false, L.Location("a buffer", -1)) ])
