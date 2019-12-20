@@ -194,6 +194,7 @@ end
 
 CommentEnd(location) = CommentEnd(false, location)
 CDATAMarkedSectionEnd(location) = CDATAMarkedSectionEnd(false, location)
+ConditionalSectionStart(conditional, location) = ConditionalSectionStart(false, conditional, location)
 ElementEnd(name, location) = ElementEnd(false, name, location)
 ElementStart(name, attributes, location) = ElementStart(false, name, attributes, location)
 ElementStart(is_empty, name, attributes, location) = ElementStart(false, is_empty, name, attributes, location)
@@ -331,8 +332,10 @@ function conditional_marked_section(mdo, dso, conditional, tokens, channel)
         put!(channel, ConditionalSectionStart(is_recovery(conditional), conditional, Lexical.location_of(mdo)))
 
     else
-        put!(channel, MarkupError("ERROR: Expecting '[' to open a conditional marked section.", [ mdo, dso, conditional ],
-                                  Lexical.location_of(conditional)))
+        # It would be more accurate to use the location of the conditional here, but it isn't necessarily a token ... it
+        # could be a properly-parsed parameter entity reference.
+        #
+        put!(channel, MarkupError("ERROR: Expecting '[' to open a conditional marked section.", [ ], Lexical.location_of(mdo)))
         put!(channel, ConditionalSectionStart(true, conditional, Lexical.location_of(mdo)))
     end
 end
