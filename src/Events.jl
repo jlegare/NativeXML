@@ -621,7 +621,7 @@ function marked_section(mdo, tokens, channel)
 
         cdata_marked_section(mdo, dso, tokens, channel)
 
-    elseif is_keyword("IGNORE", tokens, channel) | is_keyword("INCLUDE", tokens, channel)
+    elseif is_keyword("IGNORE", tokens, channel) || is_keyword("INCLUDE", tokens, channel)
         conditional = take!(tokens)  # Consume the IGNORE/INCLUDE keyword ...
         consume_white_space!(tokens) # ... and discard any trailing white space.
 
@@ -806,7 +806,7 @@ function collect_attributes(tokens)
     end
 
     function collect_attribute_value(vi, value, tokens)
-        if is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
+        if is_token(Lexical.lit, tokens) || is_token(Lexical.lita, tokens)
             delimiter = take!(tokens)
 
             while true
@@ -925,7 +925,7 @@ function collect_external_identifier(mdo, tokens, is_strict, channel)
                 consume_white_space!(tokens) # Consume any white space. See [1], § 4.2.2 ... the white space is
                                              # required, which seems kind of lame off hand, but so be it.
 
-            elseif is_strict | is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
+            elseif is_strict || is_token(Lexical.lit, tokens) || is_token(Lexical.lita, tokens)
                 # In strict mode, we always emit a markup if there is no white space between the public and system
                 # identifiers. In non-strict mode, we only output a markup error if it appears that we're looking at a
                 # system identifier.
@@ -984,7 +984,7 @@ end
 function collect_string(location, tokens, is_strict, channel)
     consume_white_space!(tokens)
 
-    if is_token(Lexical.lit, tokens) | is_token(Lexical.lita, tokens)
+    if is_token(Lexical.lit, tokens) || is_token(Lexical.lita, tokens)
         delimiter = take!(tokens)
 
         consumed = Array{Lexical.Token, 1}()
@@ -1124,8 +1124,24 @@ function is_name(tokens)
 end
 
 
+function is_reserved_name(keyword, tokens, channel)
+    # Note that if we see RNI but not the desired keyword, we've neverthless consumed the RNI.
+    #
+    # The first two conditions here are (hopefully) a little pedantic.
+    #
+    if length(keyword) > 1 && (keyword[1] == '#') && is_token(Lexical.rni, tokens)
+        rni = take!(tokens)
+
+        return is_keyword(keyword[2:end], tokens, channel)
+
+    else
+        return false
+    end
+end
+
+
 function is_token(token_type, tokens)
-    if isready(tokens) | isopen(tokens)
+    if isready(tokens) || isopen(tokens)
         token = fetch(tokens)
 
         return token.token_type == token_type
