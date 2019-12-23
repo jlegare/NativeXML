@@ -36,8 +36,12 @@
         @test evaluate("--")  == [ L.Token(L.com, "--", L.Location("a buffer", -1)) ]
         @test evaluate("&#")  == [ L.Token(L.cro, "&#", L.Location("a buffer", -1)) ]
         @test evaluate("<?")  == [ L.Token(L.pio, "<?", L.Location("a buffer", -1)) ]
-        @test evaluate("?>")  == [ L.Token(L.pic, "?>", L.Location("a buffer", -1)) ]
         @test evaluate("</")  == [ L.Token(L.etago, "</", L.Location("a buffer", -1)) ]
+    end
+
+    @testset "Lexical/Troublesome Tokens (Two Character)" begin
+        @test evaluate("?>")  == [ L.Token(L.opt, "?", L.Location("a buffer", -1)),
+                                   L.Token(L.tagc, ">", L.Location("a buffer", -1)) ]
     end
 
     @testset "Lexical/Single Tokens (Basic Text)" begin
@@ -158,7 +162,8 @@
                                                    L.Token(L.text, "PITarget", L.Location("a buffer", -1)),
                                                    L.Token(L.ws, " ", L.Location("a buffer", -1)),
                                                    L.Token(L.text, "Value", L.Location("a buffer", -1)),
-                                                   L.Token(L.pic, "?>", L.Location("a buffer", -1)), ])
+                                                   L.Token(L.opt, "?", L.Location("a buffer", -1)),
+                                                   L.Token(L.tagc, ">", L.Location("a buffer", -1)) ])
         @test (evaluate("&#32;") == [ L.Token(L.cro, "&#", L.Location("a buffer", -1)),
                                       L.Token(L.text, "32", L.Location("a buffer", -1)),
                                       L.Token(L.refc, ";", L.Location("a buffer", -1)), ])

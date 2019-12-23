@@ -736,12 +736,18 @@ function processing_instruction(tokens, channel)
         consumed = Array{Lexical.Token, 1}()
 
         while true
-            if is_token(Lexical.pic, tokens)
-                take!(tokens)
+            if is_token(Lexical.opt, tokens)
+                opt = take!(tokens)
 
-                put!(channel, ProcessingInstruction(target.value, join(map(value -> value.value, consumed), ""),
-                                                    Lexical.location_of(pio)))
-                break
+                if is_token(Lexical.tagc, tokens)
+                    take!(tokens)
+                    put!(channel, ProcessingInstruction(target.value, join(map(value -> value.value, consumed), ""),
+                                                        Lexical.location_of(pio)))
+                    break
+
+                else
+                    push!(consumed, opt)
+                end
 
             elseif is_eoi(tokens)
                 t = vcat(pio, target, consumed)

@@ -60,7 +60,8 @@
         events = evaluate("<??>")
         @test (events == [ ME("ERROR: Expecting a PI target.", [ L.Token(L.pio, "<?", L.Location("a buffer", -1)) ],
                               L.Location("a buffer", -1)),
-                           DC("?>", false, L.Location("a buffer", -1)) ])
+                           DC("?", false, L.Location("a buffer", -1)),
+                           DC(">", false, L.Location("a buffer", -1)) ])
 
         # Check that EOI is caught.
         #

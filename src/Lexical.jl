@@ -44,7 +44,7 @@ export location_of
     pero    # parameter entity reference open ... %
     refc    # reference close ... ;
     pio     # processing instruction open ... <?
-    pic     # processing instruction close ... > ... this is actually ?> in XML.
+    pic     # processing instruction close ... > ... this is actually ?> in XML ... but see below in TwoCharacterTokens.
     stago   # start tag open ... <
     etago   # end tag open ... </
     tagc    # tag close ... >
@@ -85,12 +85,20 @@ end
 # CONSTANTS
 # ----------------------------------------
 
+# In XML, pic should be ?>, as compared to > in SGML. However, we can't actually tokenize ?> as a single token, because
+# then element declarations that happen to be optional (e.g., <!ELEMENT a (b)?>) would be tokenized incorrectly (unless
+# there happens to be space between the two characters) and then we'd have to bend over backwards in the element
+# declaration parser. What kills me is that according to [1], § 1.1, "It shall be easy to write programs which process
+# XML documents.". If they'd left pic as >, like in SGML, it would've been easier to parse: you'd end a PI by looking
+# for tagc. Otherwise as it stands you'd need a context-sensitive lexical layer to distinguish the token ?> from the two
+# tokens ? and >. And in the same section, "XML shall be compatible with SGML." ... well it isn't: PIs in SGML by
+# default end with a tagc (i.e., >), not with the sequence ?>. Anyway, that's my tirade for today.
+#
 const TwoCharacterTokens = Dict([ '<', '!' ] => mdo,
                                 [ ']', ']' ] => msc,
                                 [ '-', '-' ] => com,
                                 [ '&', '#' ] => cro,
                                 [ '<', '?' ] => pio,
-                                [ '?', '>' ] => pic,
                                 [ '<', '/' ] => etago)
 const OneCharacterTokens = Dict('>'  => mdc, # Again, this will never show up ... we'll always emit tagc instead.
                                 '['  => dso,
