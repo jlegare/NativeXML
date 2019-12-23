@@ -16,8 +16,10 @@ export events
 # ----------------------------------------
 
 include("./Lexical.jl")
+include("./ContentModels.jl")
 
 import .Lexical
+import .ContentModels
 
 # ----------------------------------------
 # TYPE DECLARATIONS
@@ -86,6 +88,13 @@ struct DataContent
     location ::Lexical.Location
 end
 
+
+struct ElementDeclaration
+    is_recovery   ::Bool
+    name          ::String
+    content_model ::ContentModels.AbstractModel
+    location      ::Lexical.Location
+end
 
 struct EntityDeclarationExternalGeneralData
     name                ::String
@@ -195,6 +204,7 @@ end
 CommentEnd(location) = CommentEnd(false, location)
 CDATAMarkedSectionEnd(location) = CDATAMarkedSectionEnd(false, location)
 ConditionalSectionStart(conditional, location) = ConditionalSectionStart(false, conditional, location)
+ElementDeclaration(name, content_model, location) = ElementDeclaration(false, name, content_model, location)
 ElementEnd(name, location) = ElementEnd(false, name, location)
 ElementStart(name, attributes, location) = ElementStart(false, name, attributes, location)
 ElementStart(is_empty, name, attributes, location) = ElementStart(false, is_empty, name, attributes, location)
@@ -367,6 +377,107 @@ function document_type_declaration(mdo, tokens, channel)
 
     else
         put!(channel, MarkupError("ERROR: Expecting a root element name.", [ mdo, doctype ], Lexical.location_of(doctype)))
+    end
+end
+
+
+function element_declaration(mdo, tokens, channel)
+    element = take!(tokens) # Consume the ELEMENT keyword that got us here.
+    consume_white_space!(tokens)
+
+    if is_name(tokens)
+        element_name = take!(tokens)
+        consume_white_space!(tokens)
+
+        content_model = ContentModels.AnyModel()
+        is_recovery   = false
+
+        if is_keyword("EMPTY", tokens, channel)
+            take!(tokens)
+            content_model = ContentModels.EmptyModel()
+
+        elseif is_keyword("ANY", tokens, channel)
+            take!(tokens)
+            content_model = ContentModels.AnyModel()
+
+        elseif is_token(Lexical.grpo, tokens)
+            grpo = take!(tokens)
+            consume_white_space!(tokens)
+
+            if is_reserved_name("#PCDATA", tokens, channel)
+                take!(tokens) # Notice this only taking the "PCDATA" portion ... the '#' got consumed by is_reserved_name().
+                consume_white_space!(tokens)
+
+                items = collect_mixed_content_model(tokens, channel)
+
+                if is_token(Lexical.grpc, tokens)
+                    take!(tokens)
+
+                    if is_token(Lexical.rep, tokens)
+                        take!(tokens)
+
+                    else
+                        put!(channel, MarkupError("ERROR: Expecting '*' to end a mixed content model.", [ ],
+                                                  Lexical.location_of(element_name)))
+                    end
+
+                else
+                    take!(tokens)
+                    put!(channel, MarkupError("ERROR: Expecting ')*' to end a mixed content model.", [ ],
+                                              Lexical.location_of(element_name)))
+                end
+
+                content_model = ContentModels.MixedModel(items)
+
+            else
+                content_model = collect_content_model_group(grpo, tokens, channel)
+
+                if is_token(Lexical.grpc, tokens)
+                    take!(tokens)
+                    consume_white_space!(tokens)
+
+                else
+                    take!(tokens)
+                    consume_white_space!(tokens)
+                    put!(channel, MarkupError("ERROR: Expecting ')' to end a content model group.", [ ],
+                                              Lexical.location_of(element_name)))
+                end
+
+                if is_token(Lexical.opt, tokens)
+                    take!(tokens)
+                    content_model = ContentModels.Optional(content_model)
+
+                elseif is_token(Lexical.rep, tokens)
+                    take!(tokens)
+                    content_model = ContentModels.ZeroOrMore(content_model)
+
+                elseif is_token(Lexical.plus, tokens)
+                    take!(tokens)
+                    content_model = ContentModels.OneOrMore(content_model)
+                end
+
+                consume_white_space!(tokens) # In case we saw an occurrence indicator.
+            end
+
+        else
+            put!(channel, MarkupError("ERROR: Expecting 'ANY', 'EMPTY', or '(' to open a content model.",
+                                      [ mdo, element ], Lexical.location_of(element)))
+            is_recovery = true
+        end
+
+        if is_token(Lexical.tagc, tokens)
+            take!(tokens)
+            put!(channel, ElementDeclaration(is_recovery, element_name.value, content_model, Lexical.location_of(mdo)))
+
+        else
+            take!(tokens)
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an element declaration.", [ ],
+                                      Lexical.location_of(element_name)))
+            put!(channel, ElementDeclaration(true, element_name.value, content_model, Lexical.location_of(element)))
+        end
+
+    else
+        put!(channel, MarkupError("ERROR: Expecting an element name.", [ mdo, element ], Lexical.location_of(element)))
     end
 end
 
@@ -661,9 +772,7 @@ function markup_declaration(tokens, channel)
         document_type_declaration(mdo, tokens, channel)
 
     elseif is_keyword("ELEMENT", tokens, channel)
-        # This is temporary until I write the element declaration parser.
-        #
-        put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ mdo ], Lexical.location_of(mdo)))
+        element_declaration(mdo, tokens, channel)
 
     elseif is_keyword("ENTITY", tokens, channel)
         entity_declaration(mdo, tokens, channel)
@@ -874,6 +983,120 @@ function collect_attributes(tokens)
 end
 
 
+function collect_content_model_group(grpo, tokens, channel)
+    function collect_content_model_group_items(grpo, separator, tokens, channel)
+        # By the time we're called, we've seen one group item and the separator (which has been consumed). See See [1],
+        # § 3.2.1 ... we require another item.
+        #
+        items = Array{ContentModels.AbstractModel, 1}()
+
+        while true
+            item = collect_content_model_group_item(grpo, tokens, channel)
+
+            if isnothing(item)
+                break
+
+            else
+                push!(items, item)
+            end
+
+            if is_token(separator.token_type, tokens)
+                take!(tokens)
+                consume_white_space!(tokens)
+
+            elseif is_token(Lexical.or, tokens) || is_token(Lexical.seq, tokens)
+                s = take!(tokens)
+                consume_white_space!(tokens)
+                put!(channel, MarkupError("ERROR: '|' and ',' cannot be used in the same content group.", [ ],
+                                          Lexical.location_of(s)))
+
+            elseif is_token(Lexical.grpc, tokens)
+                break
+
+            else
+                put!(channel, MarkupError("ERROR: Expecting '" * separator.value * "'.", [ ], Lexical.location_of(grpo)))
+            end
+        end
+
+        return items
+    end
+
+
+    first_item = collect_content_model_group_item(grpo, tokens, channel)
+
+    if isnothing(first_item)
+        return first_item
+    end
+
+    if is_token(Lexical.or, tokens) || is_token(Lexical.seq, tokens)
+        separator = take!(tokens)
+        consume_white_space!(tokens)
+
+        items = collect_content_model_group_items(grpo, separator, tokens, channel)
+        pushfirst!(items, first_item)
+
+        if separator.token_type == Lexical.or
+            return ContentModels.ChoiceGroup(items)
+
+        else
+            return ContentModels.SequenceGroup(items)
+        end
+
+    else
+        return first_item
+    end
+end
+
+
+function collect_content_model_group_item(grpo, tokens, channel)
+    if is_name(tokens)
+        name = take!(tokens)
+        consume_white_space!(tokens)
+
+        return ContentModels.ElementModel(name.value)
+
+    elseif is_token(Lexical.grpo, tokens)
+        grpo = take!(tokens)
+        consume_white_space!(tokens)
+
+        item = collect_content_model_group(grpo, tokens, channel)
+
+        if is_token(Lexical.grpc, tokens)
+            take!(tokens)
+            consume_white_space!(tokens)
+
+        else
+            take!(tokens)
+            consume_white_space!(tokens)
+            put!(channel, MarkupError("ERROR: Expecting ')' to end a content model group.", [ ],
+                                      Lexical.location_of(element_name)))
+        end
+
+        if is_token(Lexical.opt, tokens)
+            take!(tokens)
+            item = ContentModels.Optional(item)
+
+        elseif is_token(Lexical.rep, tokens)
+            take!(tokens)
+            item = ContentModels.ZeroOrMore(item)
+
+        elseif is_token(Lexical.plus, tokens)
+            take!(tokens)
+            item = ContentModels.OneOrMore(item)
+        end
+
+        consume_white_space!(tokens) # In case we saw an occurrence indicator.
+
+        return item
+
+    else
+        put!(channel, MarkupError("ERROR: Expecting an element name or '('.", [ ], Lexical.location_of(grpo)))
+
+        return nothing
+    end
+end
+
+
 function collect_entity_reference(tokens, in_attribute = false)
     ero = take!(tokens) # Consume the ERO token that got us here.
 
@@ -958,6 +1181,57 @@ function collect_external_identifier(mdo, tokens, is_strict, channel)
     else
         return nothing
     end
+end
+
+
+function collect_mixed_content_model(tokens, channel)
+    items = Array{ContentModels.AbstractModel, 1}()
+
+    while true
+        if is_token(Lexical.or, tokens)
+            or = take!(tokens)
+            consume_white_space!(tokens)
+
+            if is_name(tokens)
+                name = take!(tokens)
+                consume_white_space!(tokens)
+                push!(items, ContentModels.ElementModel(name.value))
+
+            elseif is_reserved_name("#PCDATA", tokens, channel)
+                put!(channel, MarkupError("ERROR: '#PCDATA' can only appear at the start of a mixed content model.",
+                                          [ ], Lexical.location_of(or)))
+                take!(tokens)
+                consume_white_space!(tokens)
+
+            elseif is_token(Lexical.or, tokens)
+                # Don't break in this case ... maybe we can keep parsing and make sense of this. Also, don't
+                # consume it ... we're going to consume it as soon as we wrap around, on the next iteration.
+                #
+                put!(channel, MarkupError("ERROR: Expecting an element name.", [ ], Lexical.location_of(or)))
+
+            else
+                put!(channel, MarkupError("ERROR: Expecting an element name.", [ ], Lexical.location_of(or)))
+                break
+            end
+
+        elseif is_name(tokens)
+            name = take!(tokens)
+            consume_white_space!(tokens)
+            put!(channel, MarkupError("ERROR: Items in a mixed content model must be separated by '|'.", [ ],
+                                      Lexical.location_of(name)))
+            push!(items, ContentModels.ElementModel(name.value))
+
+        elseif is_reserved_name("#PCDATA", tokens, channel)
+            put!(channel, MarkupError("ERROR: '#PCDATA' can only appear at the start of a mixed content model.",
+                                      [ ], Lexical.location_of(or)))
+            consume_white_space!(tokens)
+
+        else
+            break
+        end
+    end
+
+    return items
 end
 
 

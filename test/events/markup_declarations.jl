@@ -15,12 +15,6 @@
         @test (events == [ ME("ERROR: Expecting the start of a markup declaration.",
                               [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
                            DC("ATTLIST", false, L.Location("a buffer", -1)) ])
-
-        events = evaluate("<!ELEMENT")
-        @test length(events) == 2
-        @test (events == [ ME("ERROR: Expecting the start of a markup declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                           DC("ELEMENT", false, L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Markup Declarations (Negative ... invalid token after <!)" begin
@@ -57,13 +51,6 @@
                            ME("ERROR: Expecting a root element name.",
                               [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
                                 L.Token(L.text, "doctype", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
-
-        events = evaluate("<!element")
-        @test length(events) == 3
-        @test (events == [ ME("ERROR: The keyword 'element' must be uppercased.", [ ], L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting the start of a markup declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                           DC("element", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!entity")
         @test length(events) == 3
