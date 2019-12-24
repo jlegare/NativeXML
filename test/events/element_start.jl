@@ -4,9 +4,6 @@
     E = Events
     L = Events.Lexical
 
-    E = Events
-    L = Events.Lexical
-
     ElementEnd   = E.ElementEnd
     ElementStart = E.ElementStart
 
