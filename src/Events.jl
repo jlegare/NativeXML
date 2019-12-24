@@ -582,7 +582,7 @@ function entity_declaration(mdo, tokens, channel)
     end
 
 
-    entity = take!(tokens)       # Consume the ENTITY keyword that got us here.
+    entity = take!(tokens) # Consume the ENTITY keyword that got us here.
     ws = consume_white_space!(tokens)
 
     if isnothing(ws)
