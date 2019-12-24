@@ -96,6 +96,7 @@ struct ElementDeclaration
     location      ::Lexical.Location
 end
 
+
 struct EntityDeclarationExternalGeneralData
     name                ::String
     external_identifier ::Union{Nothing, ExternalIdentifier}
@@ -233,6 +234,14 @@ function Base.:(==)(left::AttributeSpecification, right::AttributeSpecification)
     return (left.name        == right.name
             && left.value    == right.value
             && left.location == right.location)
+end
+
+
+function Base.:(==)(left::ElementDeclaration, right::ElementDeclaration)
+    return (left.is_recovery      == right.is_recovery
+            && left.name          == right.name
+            && left.content_model == right.content_model
+            && left.location      == right.location)
 end
 
 
@@ -383,22 +392,38 @@ end
 
 function element_declaration(mdo, tokens, channel)
     element = take!(tokens) # Consume the ELEMENT keyword that got us here.
-    consume_white_space!(tokens)
+    ws = consume_white_space!(tokens)
+
+    if isnothing(ws)
+        # See [1], § 3.2 ... the white space is required.
+        #
+        put!(channel, MarkupError("ERROR: White space is required following the 'ELEMENT' keyword.", [ mdo, entity ],
+                                  Lexical.location_of(entity)))
+    end
 
     if is_name(tokens)
         element_name = take!(tokens)
-        consume_white_space!(tokens)
+        ws = consume_white_space!(tokens)
+
+        if isnothing(ws)
+            # See [1], § 3.2 ... the white space is required. This is a bit lame ... the white space wouldn't be needed
+            # to disambiguate in some cases (e.g., if the content model begins with a parenthesis), but ... well
+            # ... whatever.
+            #
+            put!(channel, MarkupError("ERROR: White space is required following an element name.", [ mdo, entity ],
+                                      Lexical.location_of(entity)))
+        end
 
         content_model = ContentModels.AnyModel()
         is_recovery   = false
 
-        if is_keyword("EMPTY", tokens, channel)
-            take!(tokens)
-            content_model = ContentModels.EmptyModel()
-
-        elseif is_keyword("ANY", tokens, channel)
+        if is_keyword("ANY", tokens, channel)
             take!(tokens)
             content_model = ContentModels.AnyModel()
+
+        elseif is_keyword("EMPTY", tokens, channel)
+            take!(tokens)
+            content_model = ContentModels.EmptyModel()
 
         elseif is_token(Lexical.grpo, tokens)
             grpo = take!(tokens)
@@ -416,7 +441,10 @@ function element_declaration(mdo, tokens, channel)
                     if is_token(Lexical.rep, tokens)
                         take!(tokens)
 
-                    else
+                    elseif length(items) > 0
+                        # The trailing '*' is only required if element names were encountered while parsing the content
+                        # model. Really. See § 3.2.2, the first branch of production [51].
+                        #
                         put!(channel, MarkupError("ERROR: Expecting '*' to end a mixed content model.", [ ],
                                                   Lexical.location_of(element_name)))
                     end
@@ -455,8 +483,6 @@ function element_declaration(mdo, tokens, channel)
                     take!(tokens)
                     content_model = ContentModels.OneOrMore(content_model)
                 end
-
-                consume_white_space!(tokens) # In case we saw an occurrence indicator.
             end
 
         else
@@ -464,6 +490,8 @@ function element_declaration(mdo, tokens, channel)
                                       [ mdo, element ], Lexical.location_of(element)))
             is_recovery = true
         end
+
+        consume_white_space!(tokens)
 
         if is_token(Lexical.tagc, tokens)
             take!(tokens)
