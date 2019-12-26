@@ -256,5 +256,84 @@
                == [ ED(false, "a", Optional(Sequence([ CMElement("b"), CMElement("c") ])), L.Location("a buffer", -1)) ])
         @test (evaluate("<!ELEMENT a (b,c)*>")
                == [ ED(false, "a", ZeroOrMore(Sequence([ CMElement("b"), CMElement("c") ])), L.Location("a buffer", -1)) ])
+
+        # Verify that nested groups are handled properly. Assuming minimal white space and no occurrence indicator for
+        # now.
+        #
+        @test (evaluate("<!ELEMENT a (b,(c))>")
+               == [ ED(false, "a", Sequence([ CMElement("b"), CMElement("c") ]), L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a (b,(c|d))>")
+               == [ ED(false, "a", Sequence([ CMElement("b"), Choice([ CMElement("c"), CMElement("d") ]) ]),
+                       L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a (b,(c,d))>")
+               == [ ED(false, "a", Sequence([ CMElement("b"), Sequence([ CMElement("c"), CMElement("d") ]) ]),
+                       L.Location("a buffer", -1)) ])
+
+        @test (evaluate("<!ELEMENT a ((c),b)>")
+               == [ ED(false, "a", Sequence([ CMElement("c"), CMElement("b") ]), L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a ((c|d),b)>")
+               == [ ED(false, "a", Sequence([ Choice([ CMElement("c"), CMElement("d") ]), CMElement("b") ]),
+                       L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a ((c,d),b)>")
+               == [ ED(false, "a", Sequence([ Sequence([ CMElement("c"), CMElement("d") ]), CMElement("b") ]),
+                       L.Location("a buffer", -1)) ])
+
+        @test (evaluate("<!ELEMENT a (b,(c),e)>")
+               == [ ED(false, "a", Sequence([ CMElement("b"), CMElement("c"), CMElement("e") ]), L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a (b,(c|d),e)>")
+               == [ ED(false, "a", Sequence([ CMElement("b"), Choice([ CMElement("c"), CMElement("d") ]), CMElement("e") ]),
+                       L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a (b,(c,d),e)>")
+               == [ ED(false, "a", Sequence([ CMElement("b"), Sequence([ CMElement("c"), CMElement("d") ]), CMElement("e") ]),
+                       L.Location("a buffer", -1)) ])
+
+        @test (evaluate("<!ELEMENT a ((c),b,(d))>")
+               == [ ED(false, "a", Sequence([ CMElement("c"), CMElement("b"), CMElement("d") ]), L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a ((c|d),b,(e|f))>")
+               == [ ED(false, "a", Sequence([ Choice([ CMElement("c"), CMElement("d") ]), CMElement("b"),
+                                              Choice([ CMElement("e"), CMElement("f") ]) ]),
+                       L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a ((c,d),b,(e,f))>")
+               == [ ED(false, "a", Sequence([ Sequence([ CMElement("c"), CMElement("d") ]), CMElement("b"),
+                                              Sequence([ CMElement("e"), CMElement("f") ])]),
+                       L.Location("a buffer", -1)) ])
+
+        # Pick one group and add occurrence indicators.
+        #
+        @test (evaluate("<!ELEMENT a ((c)+,b,(d))>")
+               == [ ED(false, "a", Sequence([ OneOrMore(CMElement("c")), CMElement("b"), CMElement("d") ]),
+                       L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a ((c|d)+,b,(e|f))>")
+               == [ ED(false, "a", Sequence([ OneOrMore(Choice([ CMElement("c"), CMElement("d") ])), CMElement("b"),
+                                              Choice([ CMElement("e"), CMElement("f") ]) ]),
+                       L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a ((c,d)+,b,(e,f))>")
+               == [ ED(false, "a", Sequence([ OneOrMore(Sequence([ CMElement("c"), CMElement("d") ])), CMElement("b"),
+                                              Sequence([ CMElement("e"), CMElement("f") ])]),
+                       L.Location("a buffer", -1)) ])
+
+        @test (evaluate("<!ELEMENT a ((c)?,b,(d))>")
+               == [ ED(false, "a", Sequence([ Optional(CMElement("c")), CMElement("b"), CMElement("d") ]),
+                       L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a ((c|d)?,b,(e|f))>")
+               == [ ED(false, "a", Sequence([ Optional(Choice([ CMElement("c"), CMElement("d") ])), CMElement("b"),
+                                              Choice([ CMElement("e"), CMElement("f") ]) ]),
+                       L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a ((c,d)?,b,(e,f))>")
+               == [ ED(false, "a", Sequence([ Optional(Sequence([ CMElement("c"), CMElement("d") ])), CMElement("b"),
+                                              Sequence([ CMElement("e"), CMElement("f") ])]),
+                       L.Location("a buffer", -1)) ])
+
+        @test (evaluate("<!ELEMENT a ((c)*,b,(d))>")
+               == [ ED(false, "a", Sequence([ ZeroOrMore(CMElement("c")), CMElement("b"), CMElement("d") ]),
+                       L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a ((c|d)*,b,(e|f))>")
+               == [ ED(false, "a", Sequence([ ZeroOrMore(Choice([ CMElement("c"), CMElement("d") ])), CMElement("b"),
+                                              Choice([ CMElement("e"), CMElement("f") ]) ]),
+                       L.Location("a buffer", -1)) ])
+        @test (evaluate("<!ELEMENT a ((c,d)*,b,(e,f))>")
+               == [ ED(false, "a", Sequence([ ZeroOrMore(Sequence([ CMElement("c"), CMElement("d") ])), CMElement("b"),
+                                              Sequence([ CMElement("e"), CMElement("f") ])]),
+                       L.Location("a buffer", -1)) ])
     end
 end
