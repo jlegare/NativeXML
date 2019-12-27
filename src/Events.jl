@@ -205,7 +205,6 @@ end
 CommentEnd(location) = CommentEnd(false, location)
 CDATAMarkedSectionEnd(location) = CDATAMarkedSectionEnd(false, location)
 ConditionalSectionStart(conditional, location) = ConditionalSectionStart(false, conditional, location)
-ElementDeclaration(name, content_model, location) = ElementDeclaration(false, name, content_model, location)
 ElementEnd(name, location) = ElementEnd(false, name, location)
 ElementStart(name, attributes, location) = ElementStart(false, name, attributes, location)
 ElementStart(is_empty, name, attributes, location) = ElementStart(false, is_empty, name, attributes, location)
