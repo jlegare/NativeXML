@@ -52,6 +52,10 @@
         # PI. Make sure that any trailing white space is captured.
         #
         @test evaluate("<?target value ?>") == [ PI("target", "value ", L.Location("a buffer", -1)) ]
+
+        # A '?' can appear in a PI value.
+        #
+        @test evaluate("<?Are you there? Hello, World!?>") == [ PI("Are", "you there? Hello, World!", L.Location("a buffer", -1)) ]
     end
 
     @testset "Events/Processing Instructions (Negative ... no target)" begin
