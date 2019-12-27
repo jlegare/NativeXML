@@ -22,7 +22,7 @@
     DC = E.DataContent
     ME = E.MarkupError
 
-    @testset "Events/Element Declarations (Positive)" begin
+    @testset "Events/Element Declarations, ANY (Positive)" begin
         # Verify that the element name is handled properly ... just use ANY for the content model.
         #
         @test evaluate("<!ELEMENT a ANY>")   == [ ED(false, "a", CMAny(), L.Location("a buffer", -1)) ]
@@ -48,7 +48,9 @@
         @test evaluate("<!ELEMENT a ANY\n>")       == [ ED(false, "a", CMAny(), L.Location("a buffer", -1)) ]
         @test evaluate("<!ELEMENT a ANY\n\t>")     == [ ED(false, "a", CMAny(), L.Location("a buffer", -1)) ]
         @test evaluate("<!ELEMENT a ANY\u09>")     == [ ED(false, "a", CMAny(), L.Location("a buffer", -1)) ]
+    end
 
+    @testset "Events/Element Declarations, EMPTY (Positive)" begin
         # Verify that the EMPTY content model is handled properly. This is mostly a matter of verifying that trailing
         # white space is discarded.
         #
@@ -58,7 +60,9 @@
         @test evaluate("<!ELEMENT a EMPTY\n>")       == [ ED(false, "a", CMEmpty(), L.Location("a buffer", -1)) ]
         @test evaluate("<!ELEMENT a EMPTY\n\t>")     == [ ED(false, "a", CMEmpty(), L.Location("a buffer", -1)) ]
         @test evaluate("<!ELEMENT a EMPTY\u09>")     == [ ED(false, "a", CMEmpty(), L.Location("a buffer", -1)) ]
+    end
 
+    @testset "Events/Element Declarations, Mixed Content (Positive)" begin
         # Verify that a mixed content model is handled properly. Assuming minimal white space for now.
         #
         @test evaluate("<!ELEMENT a (#PCDATA)>")  == [ ED(false, "a", CMMixed([ ]), L.Location("a buffer", -1)) ]
@@ -127,7 +131,57 @@
 
         @test (evaluate("<!ELEMENT a (#PCDATA|b\t|\tc\n)*\n>")
                == [ ED(false, "a", CMMixed([ CMElement("b"), CMElement("c") ]), L.Location("a buffer", -1)) ])
+    end
 
+    @testset "Events/Element Declarations, Mixed Content (Negative ... missing leading white space)" begin
+        @test (evaluate("<!ELEMENT a(#PCDATA)>")
+               == [ ME("ERROR: White space is required following an element name.",
+                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                         L.Token(L.text, "ELEMENT", L.Location("a buffer", -1)),
+                         L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                    ED(true, "a", CMMixed([ ]), L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Element Declarations, Mixed Content (Negative ... missing trailing occurrence indicator)" begin
+        @test (evaluate("<!ELEMENT a (#PCDATA | b)>")
+               == [ ME("ERROR: Expecting '*' to end a mixed content model.", [ ], L.Location("a buffer", -1)),
+                    ED(true, "a", CMMixed([ CMElement("b") ]), L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Element Declarations, Mixed Content (Negative ... missing GRPC)" begin
+        @test (evaluate("<!ELEMENT a (#PCDATA>")
+               == [ ME("ERROR: Expecting ')*' to end a mixed content model.", [ ], L.Location("a buffer", -1)),
+                    ED(true, "a", CMMixed([ ]), L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Element Declarations, Mixed Content (Negative ... missing element name)" begin
+        @test (evaluate("<!ELEMENT a (#PCDATA||b)*>")
+               == [ ME("ERROR: Expecting an element name.", [ ], L.Location("a buffer", -1)),
+                    ED(false, "a", CMMixed([ CMElement("b") ]), L.Location("a buffer", -1)) ])
+
+        @test (evaluate("<!ELEMENT a (#PCDATA|)*>")
+               == [ ME("ERROR: Expecting an element name.", [ ], L.Location("a buffer", -1)),
+                    ED(false, "a", CMMixed([ ]), L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Element Declarations, Mixed Content (Negative ... missing separator)" begin
+        @test (evaluate("<!ELEMENT a (#PCDATA b)*>")
+               == [ ME("ERROR: Items in a mixed content model must be separated by '|'.", [ ], L.Location("a buffer", -1)),
+                    ED(false, "a", CMMixed([ CMElement("b") ]), L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Element Declarations, Mixed Content (Negative ... out of position #PCDATA)" begin
+        @test (evaluate("<!ELEMENT a (#PCDATA|#PCDATA)>")
+               == [ ME("ERROR: '#PCDATA' can only appear at the start of a mixed content model.", [ ], L.Location("a buffer", -1)),
+                    ED(false, "a", CMMixed([ ]), L.Location("a buffer", -1)) ])
+
+        @test (evaluate("<!ELEMENT a (#PCDATA b #PCDATA)*>")
+               == [ ME("ERROR: Items in a mixed content model must be separated by '|'.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: '#PCDATA' can only appear at the start of a mixed content model.", [ ], L.Location("a buffer", -1)),
+                    ED(false, "a", CMMixed([ CMElement("b") ]), L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Element Declarations, Element Content (Positive)" begin
         # Verify that a single-child element content model is handled properly. Assuming minimal white space for now.
         #
         @test evaluate("<!ELEMENT a (b)>")  == [ ED(false, "a", CMElement("b"), L.Location("a buffer", -1)) ]
@@ -335,5 +389,77 @@
                == [ ED(false, "a", Sequence([ ZeroOrMore(Sequence([ CMElement("c"), CMElement("d") ])), CMElement("b"),
                                               Sequence([ CMElement("e"), CMElement("f") ])]),
                        L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Element Declarations, Element Content (Negative ... mixed combinators)" begin
+        @test (evaluate("<!ELEMENT a (b|c,d)>")
+               == [ ME("ERROR: '|' and ',' cannot be used in the same content group.", [ ], L.Location("a buffer", -1)),
+                    ED(false, "a", Choice([ CMElement("b"), CMElement("c"), CMElement("d") ]), L.Location("a buffer", -1)) ])
+
+        @test (evaluate("<!ELEMENT a (b,c|d)>")
+               == [ ME("ERROR: '|' and ',' cannot be used in the same content group.", [ ], L.Location("a buffer", -1)),
+                    ED(false, "a", Sequence([ CMElement("b"), CMElement("c"), CMElement("d") ]), L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Element Declarations, Element Content (Negative ... missing separator)" begin
+        # We need to collect the first separator ... basically so that we know what to miss later on.
+        #
+        @test (evaluate("<!ELEMENT a (b|c d)>")
+               == [ ME("ERROR: Expecting '|'.", [ ], L.Location("a buffer", -1)),
+                    ED(false, "a", Choice([ CMElement("b"), CMElement("c"), CMElement("d") ]), L.Location("a buffer", -1)) ])
+
+        @test (evaluate("<!ELEMENT a (b,c d)>")
+               == [ ME("ERROR: Expecting ','.", [ ], L.Location("a buffer", -1)),
+                    ED(false, "a", Sequence([ CMElement("b"), CMElement("c"), CMElement("d") ]), L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Element Declarations, Element Content (Negative ... missing element name or GRPO)" begin
+        @test (evaluate("<!ELEMENT a (+)>")
+               == [ ME("ERROR: Expecting an element name or '('.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting '>' to end an element declaration.", [ ], L.Location("a buffer", -1)),
+                    ED(true, "a", CMAny(), L.Location("a buffer", -1)),
+                    DC(")", false, L.Location("a buffer", -1)),
+                    DC(">", false, L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Element Declarations, Element Content (Negative ... missing GRPC)" begin
+        # Verify that a single-child element content model is handled properly. Assuming minimal white space for now.
+        #
+        @test (evaluate("<!ELEMENT a (b>")
+               == [ ME("ERROR: Expecting ')' to end a content model group.", [ ], L.Location("a buffer", -1)),
+                    ED(true, "a", CMElement("b"), L.Location("a buffer", -1)) ])
+
+        @test (evaluate("<!ELEMENT a (b,(c>")
+               == [ ME("ERROR: Expecting ')' to end a content model group.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting ','.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting an element name or '('.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting ')' to end a content model group.", [ ], L.Location("a buffer", -1)) ])
+    end
+
+    @testset "Events/Element Declarations (Negative ... miscellaneous)" begin
+        @test (evaluate("<!ELEMENT+ a (#PCDATA)>")
+               == [ ME("ERROR: White space is required following the 'ELEMENT' keyword.",
+                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                         L.Token(L.text, "ELEMENT", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting an element name.",
+                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                         L.Token(L.text, "ELEMENT", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                    DC("+", false, L.Location("a buffer", -1)),
+                    DC(" ", true, L.Location("a buffer", -1)),
+                    DC("a", false, L.Location("a buffer", -1)),
+                    DC(" ", true, L.Location("a buffer", -1)),
+                    DC("(", false, L.Location("a buffer", -1)),
+                    DC("#", false, L.Location("a buffer", -1)),
+                    DC("PCDATA", false, L.Location("a buffer", -1)),
+                    DC(")", false, L.Location("a buffer", -1)),
+                    DC(">", false, L.Location("a buffer", -1)), ])
+
+        @test (evaluate("<!ELEMENT a b>")
+               == [ ME("ERROR: Expecting 'ANY', 'EMPTY', or '(' to open a content model.",
+                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
+                         L.Token(L.text, "ELEMENT", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting '>' to end an element declaration.", [ ], L.Location("a buffer", -1)),
+                    ED(true, "a", CMAny(), L.Location("a buffer", -1)),
+                    DC(">", false, L.Location("a buffer", -1)), ])
     end
 end

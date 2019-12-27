@@ -394,11 +394,14 @@ function element_declaration(mdo, tokens, channel)
     element = take!(tokens) # Consume the ELEMENT keyword that got us here.
     ws = consume_white_space!(tokens)
 
+    is_recovery = false
+
     if isnothing(ws)
         # See [1], § 3.2 ... the white space is required.
         #
-        put!(channel, MarkupError("ERROR: White space is required following the 'ELEMENT' keyword.", [ mdo, entity ],
-                                  Lexical.location_of(entity)))
+        put!(channel, MarkupError("ERROR: White space is required following the 'ELEMENT' keyword.", [ mdo, element ],
+                                  Lexical.location_of(element)))
+        is_recovery = true
     end
 
     if is_name(tokens)
@@ -410,12 +413,12 @@ function element_declaration(mdo, tokens, channel)
             # to disambiguate in some cases (e.g., if the content model begins with a parenthesis), but ... well
             # ... whatever.
             #
-            put!(channel, MarkupError("ERROR: White space is required following an element name.", [ mdo, entity ],
-                                      Lexical.location_of(entity)))
+            put!(channel, MarkupError("ERROR: White space is required following an element name.", [ mdo, element, element_name ],
+                                      Lexical.location_of(element_name)))
+            is_recovery = true
         end
 
         content_model = ContentModels.AnyModel()
-        is_recovery   = false
 
         if is_keyword("ANY", tokens, channel)
             take!(tokens)
@@ -447,12 +450,13 @@ function element_declaration(mdo, tokens, channel)
                         #
                         put!(channel, MarkupError("ERROR: Expecting '*' to end a mixed content model.", [ ],
                                                   Lexical.location_of(element_name)))
+                        is_recovery = true
                     end
 
                 else
-                    take!(tokens)
                     put!(channel, MarkupError("ERROR: Expecting ')*' to end a mixed content model.", [ ],
                                               Lexical.location_of(element_name)))
+                    is_recovery = true
                 end
 
                 content_model = ContentModels.MixedModel(items)
@@ -460,28 +464,33 @@ function element_declaration(mdo, tokens, channel)
             else
                 content_model = collect_content_model_group(grpo, tokens, channel)
 
-                if is_token(Lexical.grpc, tokens)
-                    take!(tokens)
-                    consume_white_space!(tokens)
+                if isnothing(content_model)
+                    content_model = ContentModels.AnyModel()
 
                 else
-                    take!(tokens)
-                    consume_white_space!(tokens)
-                    put!(channel, MarkupError("ERROR: Expecting ')' to end a content model group.", [ ],
-                                              Lexical.location_of(element_name)))
-                end
+                    if is_token(Lexical.grpc, tokens)
+                        take!(tokens)
+                        consume_white_space!(tokens)
 
-                if is_token(Lexical.opt, tokens)
-                    take!(tokens)
-                    content_model = ContentModels.Optional(content_model)
+                    else
+                        consume_white_space!(tokens)
+                        put!(channel, MarkupError("ERROR: Expecting ')' to end a content model group.", [ ],
+                                                  Lexical.location_of(grpo)))
+                        is_recovery = true
+                    end
 
-                elseif is_token(Lexical.rep, tokens)
-                    take!(tokens)
-                    content_model = ContentModels.ZeroOrMore(content_model)
+                    if is_token(Lexical.opt, tokens)
+                        take!(tokens)
+                        content_model = ContentModels.Optional(content_model)
 
-                elseif is_token(Lexical.plus, tokens)
-                    take!(tokens)
-                    content_model = ContentModels.OneOrMore(content_model)
+                    elseif is_token(Lexical.rep, tokens)
+                        take!(tokens)
+                        content_model = ContentModels.ZeroOrMore(content_model)
+
+                    elseif is_token(Lexical.plus, tokens)
+                        take!(tokens)
+                        content_model = ContentModels.OneOrMore(content_model)
+                    end
                 end
             end
 
@@ -1096,8 +1105,7 @@ function collect_content_model_group_item(grpo, tokens, channel)
         else
             take!(tokens)
             consume_white_space!(tokens)
-            put!(channel, MarkupError("ERROR: Expecting ')' to end a content model group.", [ ],
-                                      Lexical.location_of(element_name)))
+            put!(channel, MarkupError("ERROR: Expecting ')' to end a content model group.", [ ], Lexical.location_of(grpo)))
         end
 
         if is_token(Lexical.opt, tokens)
@@ -1250,8 +1258,9 @@ function collect_mixed_content_model(tokens, channel)
             push!(items, ContentModels.ElementModel(name.value))
 
         elseif is_reserved_name("#PCDATA", tokens, channel)
+            t = take!(tokens)
             put!(channel, MarkupError("ERROR: '#PCDATA' can only appear at the start of a mixed content model.",
-                                      [ ], Lexical.location_of(or)))
+                                      [ ], Lexical.location_of(t)))
             consume_white_space!(tokens)
 
         else
