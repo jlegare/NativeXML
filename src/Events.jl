@@ -160,9 +160,8 @@ end
 
 
 struct MarkupError
-    message   ::String # I'll eventually do something more sophisticated here.
-    discarded ::Array{Lexical.Token, 1}
-    location  ::Lexical.Location
+    message  ::String # I'll eventually do something more sophisticated here.
+    location ::Lexical.Location
 end
 
 
@@ -215,9 +214,8 @@ DataContent(value, location) = DataContent(value, false, location)
 # These are needed for writing tests, because these types contain other structs inside an array.
 #
 function Base.:(==)(left::MarkupError, right::MarkupError)
-    return (left.message      == right.message
-            && left.discarded == right.discarded
-            && left.location  == right.location)
+    return (left.message     == right.message
+            && left.location == right.location)
 end
 
 
@@ -251,7 +249,7 @@ function cdata_marked_section(mdo, dso, tokens, channel)
     if !isnothing(ws)
         # Discard the white space ... there isn't much we can do with it.
         #
-        put!(channel, MarkupError("ERROR: White space is not allowed after the 'CDATA' keyword.", [ ], Lexical.location_of(text)))
+        put!(channel, MarkupError("ERROR: White space is not allowed after the 'CDATA' keyword.", Lexical.location_of(text)))
     end
 
     if is_token(Lexical.dso, tokens)
@@ -273,15 +271,14 @@ function cdata_marked_section(mdo, dso, tokens, channel)
 
                 else
                     put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]))
-                    put!(channel, MarkupError("ERROR: Expecting '>' to end a CDATA marked section.", [ ],
-                                              Lexical.location_of(msc)))
+                    put!(channel, MarkupError("ERROR: Expecting '>' to end a CDATA marked section.", Lexical.location_of(msc)))
                     put!(channel, CDATAMarkedSectionEnd(true, Lexical.location_of(msc)))
                     break
                 end
 
             elseif is_eoi(tokens)
                 put!(channel, DataContent(consumed, locations_of(mdo, consumed)[:head]))
-                put!(channel, MarkupError("ERROR: Expecting ']]>' to end a CDATA marked section.", [ ],
+                put!(channel, MarkupError("ERROR: Expecting ']]>' to end a CDATA marked section.",
                                           locations_of(mdo, consumed)[:tail]))
                 put!(channel, CDATAMarkedSectionEnd(true, locations_of(mdo, consumed)[:tail]))
                 break
@@ -292,7 +289,7 @@ function cdata_marked_section(mdo, dso, tokens, channel)
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting '[' to open a CDATA marked section.", [ ], Lexical.location_of(text)))
+        put!(channel, MarkupError("ERROR: Expecting '[' to open a CDATA marked section.", Lexical.location_of(text)))
     end
 end
 
@@ -319,14 +316,14 @@ function comment(mdo, tokens, channel)
 
             else
                 put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]))
-                put!(channel, MarkupError("ERROR: '--' is not allowed inside a comment.", [ ], locations_of(com, consumed)[:tail]))
+                put!(channel, MarkupError("ERROR: '--' is not allowed inside a comment.", locations_of(com, consumed)[:tail]))
                 put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]))
                 break
             end
 
         elseif is_eoi(tokens)
             put!(channel, DataContent(consumed, locations_of(com, consumed)[:head]))
-            put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", [ ], locations_of(com, consumed)[:tail]))
+            put!(channel, MarkupError("ERROR: Expecting '-->' to end a comment.", locations_of(com, consumed)[:tail]))
             put!(channel, CommentEnd(true, locations_of(com, consumed)[:tail]))
             break
 
@@ -350,7 +347,7 @@ function conditional_marked_section(mdo, dso, conditional, tokens, channel)
         # It would be more accurate to use the location of the conditional here, but it isn't necessarily a token ... it
         # could be a properly-parsed parameter entity reference.
         #
-        put!(channel, MarkupError("ERROR: Expecting '[' to open a conditional marked section.", [ ], Lexical.location_of(mdo)))
+        put!(channel, MarkupError("ERROR: Expecting '[' to open a conditional marked section.", Lexical.location_of(mdo)))
         put!(channel, ConditionalSectionStart(true, conditional, Lexical.location_of(mdo)))
     end
 end
@@ -376,11 +373,11 @@ function document_type_declaration(mdo, tokens, channel)
             put!(channel, DTDInternalStart(Lexical.location_of(doctype)))
 
         else
-            put!(channel, MarkupError("ERROR: Expecting '>' to end a document type declaration.", [ ], Lexical.location_of(root)))
+            put!(channel, MarkupError("ERROR: Expecting '>' to end a document type declaration.", Lexical.location_of(root)))
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting a root element name.", [ ], Lexical.location_of(doctype)))
+        put!(channel, MarkupError("ERROR: Expecting a root element name.", Lexical.location_of(doctype)))
     end
 end
 
@@ -394,8 +391,7 @@ function element_declaration(mdo, tokens, channel)
     if isnothing(ws)
         # See [1], § 3.2 ... the white space is required.
         #
-        put!(channel, MarkupError("ERROR: White space is required following the 'ELEMENT' keyword.", [ ],
-                                  Lexical.location_of(element)))
+        put!(channel, MarkupError("ERROR: White space is required following the 'ELEMENT' keyword.", Lexical.location_of(element)))
         is_recovery = true
     end
 
@@ -408,7 +404,7 @@ function element_declaration(mdo, tokens, channel)
             # to disambiguate in some cases (e.g., if the content model begins with a parenthesis), but ... well
             # ... whatever.
             #
-            put!(channel, MarkupError("ERROR: White space is required following an element name.", [ ],
+            put!(channel, MarkupError("ERROR: White space is required following an element name.",
                                       Lexical.location_of(element_name)))
             is_recovery = true
         end
@@ -443,13 +439,13 @@ function element_declaration(mdo, tokens, channel)
                         # The trailing '*' is only required if element names were encountered while parsing the content
                         # model. Really. See § 3.2.2, the first branch of production [51].
                         #
-                        put!(channel, MarkupError("ERROR: Expecting '*' to end a mixed content model.", [ ],
+                        put!(channel, MarkupError("ERROR: Expecting '*' to end a mixed content model.",
                                                   Lexical.location_of(element_name)))
                         is_recovery = true
                     end
 
                 else
-                    put!(channel, MarkupError("ERROR: Expecting ')*' to end a mixed content model.", [ ],
+                    put!(channel, MarkupError("ERROR: Expecting ')*' to end a mixed content model.",
                                               Lexical.location_of(element_name)))
                     is_recovery = true
                 end
@@ -469,8 +465,7 @@ function element_declaration(mdo, tokens, channel)
 
                     else
                         consume_white_space!(tokens)
-                        put!(channel, MarkupError("ERROR: Expecting ')' to end a content model group.", [ ],
-                                                  Lexical.location_of(grpo)))
+                        put!(channel, MarkupError("ERROR: Expecting ')' to end a content model group.", Lexical.location_of(grpo)))
                         is_recovery = true
                     end
 
@@ -491,7 +486,7 @@ function element_declaration(mdo, tokens, channel)
 
         else
             put!(channel, MarkupError("ERROR: Expecting 'ANY', 'EMPTY', or '(' to open a content model.",
-                                      [ ], Lexical.location_of(element)))
+                                      Lexical.location_of(element)))
             is_recovery = true
         end
 
@@ -503,13 +498,12 @@ function element_declaration(mdo, tokens, channel)
 
         else
             take!(tokens)
-            put!(channel, MarkupError("ERROR: Expecting '>' to end an element declaration.", [ ],
-                                      Lexical.location_of(element_name)))
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an element declaration.", Lexical.location_of(element_name)))
             put!(channel, ElementDeclaration(true, element_name.value, content_model, Lexical.location_of(element)))
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting an element name.", [ ], Lexical.location_of(element)))
+        put!(channel, MarkupError("ERROR: Expecting an element name.", Lexical.location_of(element)))
     end
 end
 
@@ -526,12 +520,12 @@ function element_end(tokens, channel)
             put!(channel, ElementEnd(name.value, Lexical.location_of(name)))
 
         else
-            put!(channel, MarkupError("ERROR: Expecting '>' to end an element close tag.", [ ], Lexical.location_of(name)))
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an element close tag.", Lexical.location_of(name)))
             put!(channel, ElementEnd(true, name.value, Lexical.location_of(name)))
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting an element name.", [ ], Lexical.location_of(etago)))
+        put!(channel, MarkupError("ERROR: Expecting an element name.", Lexical.location_of(etago)))
     end
 end
 
@@ -554,7 +548,7 @@ function element_start(tokens, channel)
 
             else
                 put!(channel, ElementStart(true, true, name.value, attributes, Lexical.location_of(name)))
-                put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ ], Lexical.location_of(name)))
+                put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", Lexical.location_of(name)))
                 put!(channel, ElementEnd(true, name.value, Lexical.location_of(name)))
             end
 
@@ -564,11 +558,11 @@ function element_start(tokens, channel)
 
         else
             put!(channel, ElementStart(true, false, name.value, attributes, Lexical.location_of(name)))
-            put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", [ ], Lexical.location_of(name)))
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an element open tag.", Lexical.location_of(name)))
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting an element name.", [ ], Lexical.location_of(stago)))
+        put!(channel, MarkupError("ERROR: Expecting an element name.", Lexical.location_of(stago)))
     end
 end
 
@@ -600,7 +594,7 @@ function entity_declaration(mdo, tokens, channel)
                     return ( external_identifier = external_identifier, entity_value = nothing, ndata_name =  ndata_name )
 
                 else
-                    put!(channel, MarkupError("ERROR: Expecting a notation name.", [ ], Lexical.location_of(entity_name)))
+                    put!(channel, MarkupError("ERROR: Expecting a notation name.", Lexical.location_of(entity_name)))
 
                     return ( external_identifier = external_identifier, entity_value = nothing, ndata_name = nothing )
                 end
@@ -618,8 +612,7 @@ function entity_declaration(mdo, tokens, channel)
     if isnothing(ws)
         # See [1], § 4.2 ... the white space is required.
         #
-        put!(channel, MarkupError("ERROR: White space is required following the 'ENTITY' keyword.", [ ],
-                                  Lexical.location_of(entity)))
+        put!(channel, MarkupError("ERROR: White space is required following the 'ENTITY' keyword.", Lexical.location_of(entity)))
     end
 
     is_parameter_entity = is_token(Lexical.pero, tokens)
@@ -630,7 +623,7 @@ function entity_declaration(mdo, tokens, channel)
         if isnothing(ws)
             # See [1], § 4.2 ... the white space is required. This one is pretty lame, but it is what it is.
             #
-            put!(channel, MarkupError("ERROR: White space is required following '%'.", [ ], Lexical.location_of(pero)))
+            put!(channel, MarkupError("ERROR: White space is required following '%'.", Lexical.location_of(pero)))
         end
     end
 
@@ -641,7 +634,7 @@ function entity_declaration(mdo, tokens, channel)
         consume_white_space!(tokens)
 
         if is_parameter_entity && !isnothing(ndata_name)
-            put!(channel, MarkupError("ERROR: A parameter entity cannot have a notation.", [ ], Lexical.location_of(entity_name)))
+            put!(channel, MarkupError("ERROR: A parameter entity cannot have a notation.", Lexical.location_of(entity_name)))
             ndata_name = nothing
         end
 
@@ -649,7 +642,7 @@ function entity_declaration(mdo, tokens, channel)
             tagc = take!(tokens)
 
         else
-            put!(channel, MarkupError("ERROR: Expecting '>' to end an entity declaration.", [ ], Lexical.location_of(entity_name)))
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an entity declaration.", Lexical.location_of(entity_name)))
             # From now on in this branch, we're basically doing error-recovery: better to pretend the entity declaration
             # was properly parsed, otherwise there could be a cascade of errors down the line.
             #
@@ -681,7 +674,7 @@ function entity_declaration(mdo, tokens, channel)
         put!(channel, constructor(entity_name.value, Lexical.location_of(entity)))
 
     else
-        put!(channel, MarkupError("ERROR: Expecting an entity name.", [ ], Lexical.location_of(entity)))
+        put!(channel, MarkupError("ERROR: Expecting an entity name.", Lexical.location_of(entity)))
     end
 end
 
@@ -753,8 +746,7 @@ function marked_section(mdo, tokens, channel)
         if !isnothing(leading)
             # Discard the white space ... there isn't much we can do with it.
             #
-            put!(channel, MarkupError("ERROR: White space is not allowed before the 'CDATA' keyword.", [ ],
-                                      Lexical.location_of(dso)))
+            put!(channel, MarkupError("ERROR: White space is not allowed before the 'CDATA' keyword.", Lexical.location_of(dso)))
         end
 
         cdata_marked_section(mdo, dso, tokens, channel)
@@ -772,8 +764,7 @@ function marked_section(mdo, tokens, channel)
         conditional_marked_section(mdo, dso, conditional, tokens, channel)
 
     else
-        put!(channel, MarkupError("ERROR: Expecting the start of a CDATA or conditional marked section.", [ ],
-                                  Lexical.location_of(dso)))
+        put!(channel, MarkupError("ERROR: Expecting the start of a CDATA or conditional marked section.", Lexical.location_of(dso)))
         if !isnothing(leading)
             put!(channel, DataContent(leading.value, true, locations_of(mdo, [ dso ])[:head]))
         end
@@ -793,7 +784,7 @@ function markup_declaration(tokens, channel)
     elseif is_keyword("ATTLIST", tokens, channel)
         # This is temporary until I write the attribute declaration parser.
         #
-        put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ ], Lexical.location_of(mdo)))
+        put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", Lexical.location_of(mdo)))
 
     elseif is_keyword("DOCTYPE", tokens, channel)
         document_type_declaration(mdo, tokens, channel)
@@ -809,16 +800,16 @@ function markup_declaration(tokens, channel)
 
     else
         if is_keyword("sgml", tokens, channel)
-            put!(channel, MarkupError("ERROR: The keyword 'SGML' is not available in XML.", [ ], Lexical.location_of(mdo)))
+            put!(channel, MarkupError("ERROR: The keyword 'SGML' is not available in XML.", Lexical.location_of(mdo)))
 
         elseif is_keyword("shortref", tokens, channel)
-            put!(channel, MarkupError("ERROR: The keyword 'SHORTREF' is not available in XML.", [ ], Lexical.location_of(mdo)))
+            put!(channel, MarkupError("ERROR: The keyword 'SHORTREF' is not available in XML.", Lexical.location_of(mdo)))
 
         elseif is_keyword("usemap", tokens, channel)
-            put!(channel, MarkupError("ERROR: The keyword 'USEMAP' is not available in XML.", [ ], Lexical.location_of(mdo)))
+            put!(channel, MarkupError("ERROR: The keyword 'USEMAP' is not available in XML.", Lexical.location_of(mdo)))
 
         else
-            put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", [ ], Lexical.location_of(mdo)))
+            put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", Lexical.location_of(mdo)))
         end
     end
 end
@@ -836,7 +827,7 @@ function notation_declaration(mdo, tokens, channel)
         consume_white_space!(tokens)
 
         if isnothing(external_identifier)
-            put!(channel, MarkupError("ERROR: A notation declaration must specify an external identifier.", [ ],
+            put!(channel, MarkupError("ERROR: A notation declaration must specify an external identifier.",
                                       Lexical.location_of(notation_name)))
         end
 
@@ -844,13 +835,12 @@ function notation_declaration(mdo, tokens, channel)
             tagc = take!(tokens)
 
         else
-            put!(channel, MarkupError("ERROR: Expecting '>' to end a notation declaration.", [ ],
-                                      Lexical.location_of(notation_name)))
+            put!(channel, MarkupError("ERROR: Expecting '>' to end a notation declaration.", Lexical.location_of(notation_name)))
         end
         put!(channel, NotationDeclaration(notation_name.value, external_identifier, Lexical.location_of(notation)))
 
     else
-        put!(channel, MarkupError("ERROR: Expecting a notation name.", [ ], Lexical.location_of(notation)))
+        put!(channel, MarkupError("ERROR: Expecting a notation name.", Lexical.location_of(notation)))
     end
 end
 
@@ -860,7 +850,7 @@ function processing_instruction(tokens, channel)
 
     if is_name(tokens)
         if is_keyword("XML", tokens, false, channel)
-            put!(channel, MarkupError("ERROR: A PI target cannot be any case variant of 'XML'.", [ ], Lexical.location_of(pio)))
+            put!(channel, MarkupError("ERROR: A PI target cannot be any case variant of 'XML'.", Lexical.location_of(pio)))
         end
 
         target = take!(tokens) # See [1], § 2.6 ... the PI target is required.
@@ -885,7 +875,7 @@ function processing_instruction(tokens, channel)
                 end
 
             elseif is_eoi(tokens)
-                put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.", [ ],
+                put!(channel, MarkupError("ERROR: Expecting '?>' to end a processing instruction.",
                                           locations_of(pio, vcat([ target ], consumed))[:tail]))
                 break
 
@@ -895,7 +885,7 @@ function processing_instruction(tokens, channel)
         end
 
     else
-        put!(channel, MarkupError("ERROR: Expecting a PI target.", [ ], Lexical.location_of(pio)))
+        put!(channel, MarkupError("ERROR: Expecting a PI target.", Lexical.location_of(pio)))
     end
 end
 
@@ -916,11 +906,11 @@ function character_reference(tokens)
             return CharacterReference(value.value, Lexical.location_of(cro))
 
         else
-            return MarkupError("ERROR: Expecting ';' to end a character reference.", [ ], Lexical.location_of(value))
+            return MarkupError("ERROR: Expecting ';' to end a character reference.", Lexical.location_of(value))
         end
 
     else
-        return MarkupError("ERROR: Expecting a character value.", [ ], Lexical.location_of(cro))
+        return MarkupError("ERROR: Expecting a character value.", Lexical.location_of(cro))
     end
 end
 
@@ -938,7 +928,7 @@ function collect_attributes(tokens)
             collect_attribute_value(vi, value, tokens)
 
         else
-            push!(value, MarkupError("ERROR: Expecting '=' after an attribute name.", [ ], Lexical.location_of(name)))
+            push!(value, MarkupError("ERROR: Expecting '=' after an attribute name.", Lexical.location_of(name)))
         end
 
         return AttributeSpecification(name.value, value, Lexical.location_of(name))
@@ -950,7 +940,7 @@ function collect_attributes(tokens)
 
             while true
                 if is_eoi(tokens)
-                    push!(value, MarkupError("ERROR: Expecting the remainder of an attribute value.", [ ], Lexical.location_of(vi)))
+                    push!(value, MarkupError("ERROR: Expecting the remainder of an attribute value.", Lexical.location_of(vi)))
                     break
 
                 elseif fetch(tokens).token_type == delimiter.token_type
@@ -965,8 +955,7 @@ function collect_attributes(tokens)
 
                 elseif is_token(Lexical.stago, tokens)
                     stago = take!(tokens)
-                    push!(value, MarkupError("ERROR: A '<' must be escaped inside an attribute value.", [ ],
-                                             Lexical.location_of(stago)))
+                    push!(value, MarkupError("ERROR: A '<' must be escaped inside an attribute value.", Lexical.location_of(stago)))
 
                 elseif is_token(Lexical.ws, tokens)
                     ws = consume_white_space!(tokens)
@@ -979,7 +968,7 @@ function collect_attributes(tokens)
             end
 
         else
-            push!(value, MarkupError("ERROR: Expecting a quoted attribute value after '='.", [ ], Lexical.location_of(vi)))
+            push!(value, MarkupError("ERROR: Expecting a quoted attribute value after '='.", Lexical.location_of(vi)))
         end
     end
 
@@ -1030,14 +1019,13 @@ function collect_content_model_group(grpo, tokens, channel)
             elseif is_token(Lexical.or, tokens) || is_token(Lexical.seq, tokens)
                 s = take!(tokens)
                 consume_white_space!(tokens)
-                put!(channel, MarkupError("ERROR: '|' and ',' cannot be used in the same content group.", [ ],
-                                          Lexical.location_of(s)))
+                put!(channel, MarkupError("ERROR: '|' and ',' cannot be used in the same content group.", Lexical.location_of(s)))
 
             elseif is_token(Lexical.grpc, tokens)
                 break
 
             else
-                put!(channel, MarkupError("ERROR: Expecting '" * separator.value * "'.", [ ], Lexical.location_of(grpo)))
+                put!(channel, MarkupError("ERROR: Expecting '" * separator.value * "'.", Lexical.location_of(grpo)))
             end
         end
 
@@ -1091,7 +1079,7 @@ function collect_content_model_group_item(grpo, tokens, channel)
         else
             take!(tokens)
             consume_white_space!(tokens)
-            put!(channel, MarkupError("ERROR: Expecting ')' to end a content model group.", [ ], Lexical.location_of(grpo)))
+            put!(channel, MarkupError("ERROR: Expecting ')' to end a content model group.", Lexical.location_of(grpo)))
         end
 
         if is_token(Lexical.opt, tokens)
@@ -1112,7 +1100,7 @@ function collect_content_model_group_item(grpo, tokens, channel)
         return item
 
     else
-        put!(channel, MarkupError("ERROR: Expecting an element name or '('.", [ ], Lexical.location_of(grpo)))
+        put!(channel, MarkupError("ERROR: Expecting an element name or '('.", Lexical.location_of(grpo)))
 
         return nothing
     end
@@ -1130,15 +1118,15 @@ function collect_entity_reference(tokens, in_attribute = false)
             return EntityReferenceGeneral(name.value, Lexical.location_of(ero))
 
         else
-            return MarkupError("ERROR: Expecting ';' to end an entity reference.", [ ], Lexical.location_of(name))
+            return MarkupError("ERROR: Expecting ';' to end an entity reference.", Lexical.location_of(name))
         end
 
     else
         if in_attribute
-            return MarkupError("ERROR: A '&' must be escaped inside an attribute value.", [ ], Lexical.location_of(ero))
+            return MarkupError("ERROR: A '&' must be escaped inside an attribute value.", Lexical.location_of(ero))
 
         else
-            return MarkupError("ERROR: Expecting an entity name.", [ ], Lexical.location_of(ero))
+            return MarkupError("ERROR: Expecting an entity name.", Lexical.location_of(ero))
         end
     end
 end
@@ -1181,7 +1169,7 @@ function collect_external_identifier(mdo, tokens, is_strict, channel)
                 # identifiers. In non-strict mode, we only output a markup error if it appears that we're looking at a
                 # system identifier.
                 #
-                put!(channel, MarkupError("ERROR: Expecting white space following a public identifier.", [ ],
+                put!(channel, MarkupError("ERROR: Expecting white space following a public identifier.",
                                           locations_of(mdo, public_identifier)[:tail]))
             end
 
@@ -1190,7 +1178,7 @@ function collect_external_identifier(mdo, tokens, is_strict, channel)
             if isnothing(system_identifier)
                 if is_strict
                     put!(channel, MarkupError("ERROR: Expecting a system identifier following a public identifier.",
-                                              [ ], locations_of(mdo, public_identifier)[:tail]))
+                                              locations_of(mdo, public_identifier)[:tail]))
                 end
 
                 return ExternalIdentifier(stringify(public_identifier), nothing, Lexical.location_of(public))
@@ -1221,7 +1209,7 @@ function collect_mixed_content_model(tokens, channel)
 
             elseif is_reserved_name("#PCDATA", tokens, channel)
                 put!(channel, MarkupError("ERROR: '#PCDATA' can only appear at the start of a mixed content model.",
-                                          [ ], Lexical.location_of(or)))
+                                          Lexical.location_of(or)))
                 take!(tokens)
                 consume_white_space!(tokens)
 
@@ -1229,24 +1217,23 @@ function collect_mixed_content_model(tokens, channel)
                 # Don't break in this case ... maybe we can keep parsing and make sense of this. Also, don't
                 # consume it ... we're going to consume it as soon as we wrap around, on the next iteration.
                 #
-                put!(channel, MarkupError("ERROR: Expecting an element name.", [ ], Lexical.location_of(or)))
+                put!(channel, MarkupError("ERROR: Expecting an element name.", Lexical.location_of(or)))
 
             else
-                put!(channel, MarkupError("ERROR: Expecting an element name.", [ ], Lexical.location_of(or)))
+                put!(channel, MarkupError("ERROR: Expecting an element name.", Lexical.location_of(or)))
                 break
             end
 
         elseif is_name(tokens)
             name = take!(tokens)
             consume_white_space!(tokens)
-            put!(channel, MarkupError("ERROR: Items in a mixed content model must be separated by '|'.", [ ],
-                                      Lexical.location_of(name)))
+            put!(channel, MarkupError("ERROR: Items in a mixed content model must be separated by '|'.", Lexical.location_of(name)))
             push!(items, ContentModels.ElementModel(name.value))
 
         elseif is_reserved_name("#PCDATA", tokens, channel)
             t = take!(tokens)
             put!(channel, MarkupError("ERROR: '#PCDATA' can only appear at the start of a mixed content model.",
-                                      [ ], Lexical.location_of(t)))
+                                      Lexical.location_of(t)))
             consume_white_space!(tokens)
 
         else
@@ -1269,11 +1256,11 @@ function collect_parameter_entity_reference(tokens)
             return EntityReferenceParameter(name.value, Lexical.location_of(pero))
 
         else
-            return MarkupError("ERROR: Expecting ';' to end a parameter entity reference.", [ ], Lexical.location_of(name))
+            return MarkupError("ERROR: Expecting ';' to end a parameter entity reference.", Lexical.location_of(name))
         end
 
     else
-        return MarkupError("ERROR: Expecting a parameter entity name.", [ ], Lexical.location_of(pero))
+        return MarkupError("ERROR: Expecting a parameter entity name.", Lexical.location_of(pero))
     end
 end
 
@@ -1305,7 +1292,7 @@ function collect_string(location, tokens, is_strict, channel)
 
     else
         if is_strict
-            put!(channel, MarkupError("ERROR: Expecting a quoted string.", [ ], location))
+            put!(channel, MarkupError("ERROR: Expecting a quoted string.", location))
         end
 
         return nothing
@@ -1348,8 +1335,7 @@ function is_keyword(keyword, tokens, case_sensitive, channel)
                 # All keywords in XML are uppercased. The only thing that comes close to being an exception is 'XML',
                 # where all case variants are reserved.
                 #
-                put!(channel, MarkupError("ERROR: The keyword '" * text.value * "' must be uppercased.",
-                                          [ ], Lexical.location_of(text)))
+                put!(channel, MarkupError("ERROR: The keyword '" * text.value * "' must be uppercased.", Lexical.location_of(text)))
             end
 
             return true

@@ -54,29 +54,29 @@
     @testset "Events/Comments (Negative ... no terminator)" begin
         @test (evaluate("<!--") == [ CommentStart(L.Location("a buffer", -1)),
                                      DC("", L.Location("a buffer", -1)),
-                                     ME("ERROR: Expecting '-->' to end a comment.", [ ], L.Location("a buffer", -1)),
+                                     ME("ERROR: Expecting '-->' to end a comment.", L.Location("a buffer", -1)),
                                      CommentEnd(true, L.Location("a buffer", -1)) ])
         @test (evaluate("<!--x") == [ CommentStart(L.Location("a buffer", -1)),
                                       DC("x", L.Location("a buffer", -1)),
-                                      ME("ERROR: Expecting '-->' to end a comment.", [ ], L.Location("a buffer", -1)),
+                                      ME("ERROR: Expecting '-->' to end a comment.", L.Location("a buffer", -1)),
                                       CommentEnd(true, L.Location("a buffer", -1)) ])
         @test (evaluate("<!--é") == [ CommentStart(L.Location("a buffer", -1)),
                                       DC("é", L.Location("a buffer", -1)),
-                                      ME("ERROR: Expecting '-->' to end a comment.", [ ], L.Location("a buffer", -1)),
+                                      ME("ERROR: Expecting '-->' to end a comment.", L.Location("a buffer", -1)),
                                       CommentEnd(true, L.Location("a buffer", -1)) ])
         @test (evaluate("<!-- declarations for <head> & <body> ")
                == [ CommentStart(L.Location("a buffer", -1)),
                     DC(" declarations for <head> & <body> ", L.Location("a buffer", -1)),
-                    ME("ERROR: Expecting '-->' to end a comment.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting '-->' to end a comment.", L.Location("a buffer", -1)),
                     CommentEnd(true, L.Location("a buffer", -1)) ])
 
         @test (evaluate("<!--x-") == [ CommentStart(L.Location("a buffer", -1)),
                                        DC("x-", L.Location("a buffer", -1)),
-                                       ME("ERROR: Expecting '-->' to end a comment.", [ ], L.Location("a buffer", -1)),
+                                       ME("ERROR: Expecting '-->' to end a comment.", L.Location("a buffer", -1)),
                                        CommentEnd(true, L.Location("a buffer", -1)) ])
         @test (evaluate("<!--x--") == [ CommentStart(L.Location("a buffer", -1)),
                                         DC("x--", L.Location("a buffer", -1)),
-                                        ME("ERROR: Expecting '-->' to end a comment.", [ ], L.Location("a buffer", -1)),
+                                        ME("ERROR: Expecting '-->' to end a comment.", L.Location("a buffer", -1)),
                                         CommentEnd(true, L.Location("a buffer", -1)) ])
     end
 
@@ -84,7 +84,7 @@
         @test (evaluate("<!-- -- -->")
                == [ CommentStart(L.Location("a buffer", -1)),
                     DC(" ", L.Location("a buffer", -1)),
-                    ME("ERROR: '--' is not allowed inside a comment.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: '--' is not allowed inside a comment.", L.Location("a buffer", -1)),
                     CommentEnd(true, L.Location("a buffer", -1)),
                     DC(" ", true, L.Location("a buffer", -1)),
                     DC("--", false, L.Location("a buffer", -1)),
@@ -92,7 +92,7 @@
         @test (evaluate("<!------>")
                == [ CommentStart(L.Location("a buffer", -1)),
                     DC("", L.Location("a buffer", -1)),
-                    ME("ERROR: '--' is not allowed inside a comment.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: '--' is not allowed inside a comment.", L.Location("a buffer", -1)),
                     CommentEnd(true, L.Location("a buffer", -1)),
                     DC("--", false, L.Location("a buffer", -1)),
                     DC(">", false, L.Location("a buffer", -1)) ])
@@ -102,7 +102,7 @@
         @test (evaluate("<!-- B+, B, or B--->")
                == [ CommentStart(L.Location("a buffer", -1)),
                     DC(" B+, B, or B", L.Location("a buffer", -1)),
-                    ME("ERROR: '--' is not allowed inside a comment.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: '--' is not allowed inside a comment.", L.Location("a buffer", -1)),
                     CommentEnd(true, L.Location("a buffer", -1)),
                     DC("-", false, L.Location("a buffer", -1)),
                     DC(">", false, L.Location("a buffer", -1)) ])

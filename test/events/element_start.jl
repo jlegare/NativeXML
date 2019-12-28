@@ -60,72 +60,72 @@
     @testset "Events/Element Starts (Negative ... no terminator)" begin
         @test (evaluate("<a")
                == [ ElementStart(true, false, "a", [ ], L.Location("a buffer", -1)),
-                    ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)) ])
+                    ME("ERROR: Expecting '>' to end an element open tag.", L.Location("a buffer", -1)) ])
 
         @test (evaluate("<abc")
                == [ ElementStart(true, false, "abc", [ ], L.Location("a buffer", -1)),
-                    ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)) ])
+                    ME("ERROR: Expecting '>' to end an element open tag.", L.Location("a buffer", -1)) ])
 
         @test (evaluate("<a ")
                == [ ElementStart(true, false, "a", [ ], L.Location("a buffer", -1)),
-                    ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)) ])
+                    ME("ERROR: Expecting '>' to end an element open tag.", L.Location("a buffer", -1)) ])
 
         events = evaluate("<a<?")
         @test length(events) == 3
         @test events == [ ElementStart(true, false, "a", [ ], L.Location("a buffer", -1)),
-                          ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)),
-                          ME("ERROR: Expecting a PI target.", [ ], L.Location("a buffer", -1)) ]
+                          ME("ERROR: Expecting '>' to end an element open tag.", L.Location("a buffer", -1)),
+                          ME("ERROR: Expecting a PI target.", L.Location("a buffer", -1)) ]
 
         events = evaluate("<a <?")
         @test length(events) == 3
         @test events == [ ElementStart(true, false, "a", [ ], L.Location("a buffer", -1)),
-                          ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)),
-                          ME("ERROR: Expecting a PI target.", [ ], L.Location("a buffer", -1)) ]
+                          ME("ERROR: Expecting '>' to end an element open tag.", L.Location("a buffer", -1)),
+                          ME("ERROR: Expecting a PI target.", L.Location("a buffer", -1)) ]
     end
 
     @testset "Events/Empty Elements (Negative ... no terminator)" begin
         @test (evaluate("<a/")
                == [ ElementStart(true, true, "a", [ ], L.Location("a buffer", -1)),
-                    ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting '>' to end an element open tag.", L.Location("a buffer", -1)),
                     ElementEnd(true, "a", L.Location("a buffer", -1)) ])
 
         @test (evaluate("<abc/")
                == [ ElementStart(true, true, "abc", [ ], L.Location("a buffer", -1)),
-                    ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting '>' to end an element open tag.", L.Location("a buffer", -1)),
                     ElementEnd(true, "abc", L.Location("a buffer", -1)) ])
 
         @test (evaluate("<a /")
                == [ ElementStart(true, true, "a", [ ], L.Location("a buffer", -1)),
-                    ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting '>' to end an element open tag.", L.Location("a buffer", -1)),
                     ElementEnd(true, "a", L.Location("a buffer", -1)) ])
 
         events = evaluate("<a/<?")
         @test length(events) == 4
         @test events == [ ElementStart(true, false, "a", [ ], L.Location("a buffer", -1)),
-                          ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)),
+                          ME("ERROR: Expecting '>' to end an element open tag.", L.Location("a buffer", -1)),
                           ElementEnd(true, "a", L.Location("a buffer", -1)),
-                          ME("ERROR: Expecting a PI target.", [ ], L.Location("a buffer", -1)) ]
+                          ME("ERROR: Expecting a PI target.", L.Location("a buffer", -1)) ]
 
         events = evaluate("<a /<?")
         @test length(events) == 4
         @test events == [ ElementStart(true, false, "a", [ ], L.Location("a buffer", -1)),
-                          ME("ERROR: Expecting '>' to end an element open tag.", [ ], L.Location("a buffer", -1)),
+                          ME("ERROR: Expecting '>' to end an element open tag.", L.Location("a buffer", -1)),
                           ElementEnd(true, "a", L.Location("a buffer", -1)),
-                          ME("ERROR: Expecting a PI target.", [ ], L.Location("a buffer", -1)) ]
+                          ME("ERROR: Expecting a PI target.", L.Location("a buffer", -1)) ]
     end
 
     @testset "Events/Element Starts (Negative ... no element name)" begin
         @test (evaluate("<")
-               == [ ME("ERROR: Expecting an element name.", [ ], L.Location("a buffer", -1)) ])
+               == [ ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)) ])
 
         events = evaluate("<<?")
         @test length(events) == 2
-        @test (events == [ ME("ERROR: Expecting an element name.", [ ], L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting a PI target.", [ ], L.Location("a buffer", -1)) ])
+        @test (events == [ ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a PI target.", L.Location("a buffer", -1)) ])
 
         events = evaluate("< ")
         @test length(events) == 2
-        @test (events == [ ME("ERROR: Expecting an element name.", [ ], L.Location("a buffer", -1)),
+        @test (events == [ ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)),
                            DC(" ", true, L.Location("a buffer", -1)) ])
     end
 end

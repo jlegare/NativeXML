@@ -28,15 +28,15 @@
         # ensure they get captured at this level.
         #
         events = evaluate("<?XML?>")
-        @test events == [ ME("ERROR: A PI target cannot be any case variant of 'XML'.", [ ], L.Location("a buffer", -1)),
+        @test events == [ ME("ERROR: A PI target cannot be any case variant of 'XML'.", L.Location("a buffer", -1)),
                           PI("XML", "", L.Location("a buffer", -1)) ]
 
         events = evaluate("<?xml?>")
-        @test events == [ ME("ERROR: A PI target cannot be any case variant of 'XML'.", [ ], L.Location("a buffer", -1)),
+        @test events == [ ME("ERROR: A PI target cannot be any case variant of 'XML'.", L.Location("a buffer", -1)),
                           PI("xml", "", L.Location("a buffer", -1)) ]
 
         events = evaluate("<?xmL?>")
-        @test events == [ ME("ERROR: A PI target cannot be any case variant of 'XML'.", [ ], L.Location("a buffer", -1)),
+        @test events == [ ME("ERROR: A PI target cannot be any case variant of 'XML'.", L.Location("a buffer", -1)),
                           PI("xmL", "", L.Location("a buffer", -1)) ]
 
         @test evaluate("<?target value?>") == [ PI("target", "value", L.Location("a buffer", -1)) ]
@@ -59,38 +59,38 @@
         # Check that a missing PI target is caught.
         #
         events = evaluate("<??>")
-        @test (events == [ ME("ERROR: Expecting a PI target.", [ ], L.Location("a buffer", -1)),
+        @test (events == [ ME("ERROR: Expecting a PI target.", L.Location("a buffer", -1)),
                            DC("?", false, L.Location("a buffer", -1)),
                            DC(">", false, L.Location("a buffer", -1)) ])
 
         # Check that EOI is caught.
         #
         events = evaluate("<?")
-        @test (events == [ ME("ERROR: Expecting a PI target.", [ ], L.Location("a buffer", -1)) ])
+        @test (events == [ ME("ERROR: Expecting a PI target.", L.Location("a buffer", -1)) ])
 
         # Check that a random token is caught. But careful ... the parser keeps going, so we only check the FIRST
         # event. (Otherwise we're testing the results of some other part of the parser.)
         #
         events = evaluate("<?<")
-        @test (events == [ ME("ERROR: Expecting a PI target.", [ ], L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting an element name.", [ ], L.Location("a buffer", -1)) ])
+        @test (events == [ ME("ERROR: Expecting a PI target.", L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Processing Instructions (Negative ... no terminator)" begin
         # Check that EOI is caught.
         #
         events = evaluate("<?target")
-        @test (events == [ ME("ERROR: Expecting '?>' to end a processing instruction.", [ ], L.Location("a buffer", -1)) ])
+        @test (events == [ ME("ERROR: Expecting '?>' to end a processing instruction.", L.Location("a buffer", -1)) ])
 
         events = evaluate("<?target value")
-        @test (events == [ ME("ERROR: Expecting '?>' to end a processing instruction.", [ ], L.Location("a buffer", -1)) ])
+        @test (events == [ ME("ERROR: Expecting '?>' to end a processing instruction.", L.Location("a buffer", -1)) ])
 
         events = evaluate("<?target value ")
-        @test (events == [ ME("ERROR: Expecting '?>' to end a processing instruction.", [ ], L.Location("a buffer", -1)) ])
+        @test (events == [ ME("ERROR: Expecting '?>' to end a processing instruction.", L.Location("a buffer", -1)) ])
 
         # Check that a random token is caught. Note the random token goes into the PI value.
         #
         events = evaluate("<?target<")
-        @test (events == [ ME("ERROR: Expecting '?>' to end a processing instruction.", [ ], L.Location("a buffer", -1)) ])
+        @test (events == [ ME("ERROR: Expecting '?>' to end a processing instruction.", L.Location("a buffer", -1)) ])
     end
 end
