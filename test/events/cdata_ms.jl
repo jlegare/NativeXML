@@ -44,67 +44,45 @@
 
     @testset "Events/CDATA Marked Section (Negative ... no section type (CDATA))" begin
         @test (evaluate("<![")
-               == [ ME("ERROR: Expecting the start of a CDATA or conditional marked section.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+               == [ ME("ERROR: Expecting the start of a CDATA or conditional marked section.", [ ], L.Location("a buffer", -1)) ])
 
         # White space is not allowed between the DSO and the CDATA token.
         #
         @test (evaluate("<![ CDATA")
-               == [ ME("ERROR: White space is not allowed before the 'CDATA' keyword.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                    ME("ERROR: Expecting '[' to open a CDATA marked section.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.dso, "[", L.Location("a buffer", -1)),
-                         L.Token(L.text, "CDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+               == [ ME("ERROR: White space is not allowed before the 'CDATA' keyword.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting '[' to open a CDATA marked section.", [ ], L.Location("a buffer", -1)) ])
 
         @test (evaluate("<![ ")
-               == [ ME("ERROR: Expecting the start of a CDATA or conditional marked section.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+               == [ ME("ERROR: Expecting the start of a CDATA or conditional marked section.", [ ], L.Location("a buffer", -1)),
                     DC(" ", true, L.Location("a buffer", -1)) ])
 
         # Check that a random token is caught.
         #
         events = evaluate("<![<")
         @test length(events) == 2
-        @test (events == [ ME("ERROR: Expecting the start of a CDATA or conditional marked section.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting an element name.",
-                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test (events == [ ME("ERROR: Expecting the start of a CDATA or conditional marked section.", [ ],
+                              L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.", [ ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/CDATA Marked Section (Negative ... wrong section type (CDATA))" begin
         @test (evaluate("<![SDATA")
-               == [ ME("ERROR: Expecting the start of a CDATA or conditional marked section.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.dso, "[", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+               == [ ME("ERROR: Expecting the start of a CDATA or conditional marked section.", [ ], L.Location("a buffer", -1)),
                     DC("SDATA", false, L.Location("a buffer", -1)) ])
 
         @test (evaluate("<![cdata")
                == [ ME("ERROR: The keyword 'cdata' must be uppercased.", [ ], L.Location("a buffer", -1)),
-                    ME("ERROR: Expecting '[' to open a CDATA marked section.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.dso, "[", L.Location("a buffer", -1)),
-                         L.Token(L.text, "cdata", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+                    ME("ERROR: Expecting '[' to open a CDATA marked section.", [ ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/CDATA Marked Section (Negative ... no second DSO)" begin
         @test (evaluate("<![CDATA")
-               == [ ME("ERROR: Expecting '[' to open a CDATA marked section.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.dso, "[", L.Location("a buffer", -1)),
-                         L.Token(L.text, "CDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)), ])
+               == [ ME("ERROR: Expecting '[' to open a CDATA marked section.", [ ], L.Location("a buffer", -1)), ])
 
         # White space is not allowed between the CDATA token and the second DSO.
         #
         @test (evaluate("<![CDATA [")
-               == [ ME("ERROR: White space is not allowed after the 'CDATA' keyword.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.dso, "[", L.Location("a buffer", -1)),
-                         L.Token(L.text, "CDATA", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+               == [ ME("ERROR: White space is not allowed after the 'CDATA' keyword.", [ ], L.Location("a buffer", -1)),
                     CDataStart(L.Location("a buffer", -1)),
                     DC("", L.Location("a buffer", -1)),
                     ME("ERROR: Expecting ']]>' to end a CDATA marked section.", [ ], L.Location("a buffer", -1)),

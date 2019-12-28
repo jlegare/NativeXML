@@ -105,22 +105,16 @@
 
     @testset "Events/Notation Declarations (Negative ... invalid or absent notation name.)" begin
         @test (evaluate("<!NOTATION")
-               == [ ME("ERROR: Expecting a notation name.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.text, "NOTATION", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+               == [ ME("ERROR: Expecting a notation name.", [ ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION>")
         @test length(events) == 2
-        @test (events == [ ME("ERROR: Expecting a notation name.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+        @test (events == [ ME("ERROR: Expecting a notation name.", [ ], L.Location("a buffer", -1)),
                            DC(">", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION >")
         @test length(events) == 2
-        @test (events == [ ME("ERROR: Expecting a notation name.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+        @test (events == [ ME("ERROR: Expecting a notation name.", [ ], L.Location("a buffer", -1)),
                            DC(">", false, L.Location("a buffer", -1)) ])
 
         # This one is a little weird: we're picking up "PUBLIC" as the notation name. I'll have to figure out later if
@@ -128,15 +122,9 @@
         #
         events = evaluate("<!NOTATION PUBLIC")
         @test length(events) == 3
-        @test (events == [ ME("ERROR: A notation declaration must specify an external identifier.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "PUBLIC", L.Location("a buffer", -1)) ],
+        @test (events == [ ME("ERROR: A notation declaration must specify an external identifier.", [ ],
                               L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting '>' to end a notation declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "PUBLIC", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a notation declaration.", [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("PUBLIC", L.Location("a buffer", -1)) ])
 
         # This one is a little weird: we're picking up "SYSTEM" as the notation name. I'll have to figure out later if
@@ -144,187 +132,123 @@
         #
         events = evaluate("<!NOTATION SYSTEM")
         @test length(events) == 3
-        @test (events == [ ME("ERROR: A notation declaration must specify an external identifier.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "SYSTEM", L.Location("a buffer", -1)) ],
+        @test (events == [ ME("ERROR: A notation declaration must specify an external identifier.", [ ],
                               L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting '>' to end a notation declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "SYSTEM", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a notation declaration.", [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("SYSTEM", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION \"\"")
         @test length(events) == 3
-        @test (events == [ ME("ERROR: Expecting a notation name.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+        @test (events == [ ME("ERROR: Expecting a notation name.", [ ], L.Location("a buffer", -1)),
                            DC("\"", false, L.Location("a buffer", -1)),
                            DC("\"", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION ''")
         @test length(events) == 3
-        @test (events == [ ME("ERROR: Expecting a notation name.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+        @test (events == [ ME("ERROR: Expecting a notation name.", [ ], L.Location("a buffer", -1)),
                            DC("'", false, L.Location("a buffer", -1)),
                            DC("'", false, L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION <")
         @test length(events) == 2
-        @test (events == [ ME("ERROR: Expecting a notation name.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting an element name.",
-                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+        @test (events == [ ME("ERROR: Expecting a notation name.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting an element name.", [ ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Notation Declarations (Negative ... missing/invalid notation value.)" begin
         events = evaluate("<!NOTATION n>")
         @test length(events) == 2
         @test (events == [ ME("ERROR: A notation declaration must specify an external identifier.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                              [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION n >")
         @test length(events) == 2
         @test (events == [ ME("ERROR: A notation declaration must specify an external identifier.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                              [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION n\n>")
         @test length(events) == 2
         @test (events == [ ME("ERROR: A notation declaration must specify an external identifier.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                              [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION n PUBLIC")
         @test length(events) == 4
         @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
                            ME("ERROR: A notation declaration must specify an external identifier.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting '>' to end a notation declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                              [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a notation declaration.", [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION n PUBLIC ")
         @test length(events) == 4
         @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
                            ME("ERROR: A notation declaration must specify an external identifier.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting '>' to end a notation declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                              [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a notation declaration.", [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION n PUBLIC <")
         @test length(events) == 5
         @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
                            ME("ERROR: A notation declaration must specify an external identifier.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting '>' to end a notation declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                              [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a notation declaration.", [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting an element name.",
-                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+                           ME("ERROR: Expecting an element name.", [ ], L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION n SYSTEM")
         @test length(events) == 4
         @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
                            ME("ERROR: A notation declaration must specify an external identifier.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting '>' to end a notation declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                              [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a notation declaration.", [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION n SYSTEM ")
         @test length(events) == 4
         @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
                            ME("ERROR: A notation declaration must specify an external identifier.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting '>' to end a notation declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                              [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a notation declaration.", [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION n SYSTEM <")
         @test length(events) == 5
         @test (events == [ ME("ERROR: Expecting a quoted string.", [ ], L.Location("a buffer", -1)),
                            ME("ERROR: A notation declaration must specify an external identifier.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting '>' to end a notation declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                              [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a notation declaration.", [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting an element name.",
-                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+                           ME("ERROR: Expecting an element name.", [ ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Notation Declarations (Negative ... missing TAGC.)" begin
         events = evaluate("<!NOTATION n PUBLIC \"salut.not\" \"hello.not\"")
         @test length(events) == 2
         @test (events == [ ME("ERROR: Expecting '>' to end a notation declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+                              [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", "salut.not", "hello.not", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION n PUBLIC \"salut.not\" \"hello.not\" ")
         @test length(events) == 2
-        @test (events == [ ME("ERROR: Expecting '>' to end a notation declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+        @test (events == [ ME("ERROR: Expecting '>' to end a notation declaration.", [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", "salut.not", "hello.not", L.Location("a buffer", -1)) ])
 
         events = evaluate("<!NOTATION n PUBLIC \"salut.not\" \"hello.not\" <")
         @test length(events) == 3
-        @test (events == [ ME("ERROR: Expecting '>' to end a notation declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+        @test (events == [ ME("ERROR: Expecting '>' to end a notation declaration.", [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", "salut.not", "hello.not", L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting an element name.",
-                              [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
+                           ME("ERROR: Expecting an element name.", [ ], L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Notation Declarations (Negative ... missing white space between public and system identifier.)" begin
         events = evaluate("<!NOTATION n PUBLIC \"salut.not\"\"hello.not\"")
         @test length(events) == 3
-        @test (events == [ ME("ERROR: Expecting white space following a public identifier.",
-                              [ ], L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting '>' to end a notation declaration.",
-                              [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                                L.Token(L.text, "NOTATION", L.Location("a buffer", -1)),
-                                L.Token(L.text, "n", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+        @test (events == [ ME("ERROR: Expecting white space following a public identifier.", [ ], L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting '>' to end a notation declaration.", [ ], L.Location("a buffer", -1)),
                            NotationDeclaration("n", "salut.not", "hello.not", L.Location("a buffer", -1)) ])
     end
 end

@@ -135,10 +135,7 @@
 
     @testset "Events/Element Declarations, Mixed Content (Negative ... missing leading white space)" begin
         @test (evaluate("<!ELEMENT a(#PCDATA)>")
-               == [ ME("ERROR: White space is required following an element name.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.text, "ELEMENT", L.Location("a buffer", -1)),
-                         L.Token(L.text, "a", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+               == [ ME("ERROR: White space is required following an element name.", [ ], L.Location("a buffer", -1)),
                     ED(true, "a", CMMixed([ ]), L.Location("a buffer", -1)) ])
     end
 
@@ -438,12 +435,8 @@
 
     @testset "Events/Element Declarations (Negative ... miscellaneous)" begin
         @test (evaluate("<!ELEMENT+ a (#PCDATA)>")
-               == [ ME("ERROR: White space is required following the 'ELEMENT' keyword.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.text, "ELEMENT", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
-                    ME("ERROR: Expecting an element name.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.text, "ELEMENT", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+               == [ ME("ERROR: White space is required following the 'ELEMENT' keyword.", [ ], L.Location("a buffer", -1)),
+                    ME("ERROR: Expecting an element name.", [ ], L.Location("a buffer", -1)),
                     DC("+", false, L.Location("a buffer", -1)),
                     DC(" ", true, L.Location("a buffer", -1)),
                     DC("a", false, L.Location("a buffer", -1)),
@@ -455,9 +448,7 @@
                     DC(">", false, L.Location("a buffer", -1)), ])
 
         @test (evaluate("<!ELEMENT a b>")
-               == [ ME("ERROR: Expecting 'ANY', 'EMPTY', or '(' to open a content model.",
-                       [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)),
-                         L.Token(L.text, "ELEMENT", L.Location("a buffer", -1)) ], L.Location("a buffer", -1)),
+               == [ ME("ERROR: Expecting 'ANY', 'EMPTY', or '(' to open a content model.", [ ], L.Location("a buffer", -1)),
                     ME("ERROR: Expecting '>' to end an element declaration.", [ ], L.Location("a buffer", -1)),
                     ED(true, "a", CMAny(), L.Location("a buffer", -1)),
                     DC(">", false, L.Location("a buffer", -1)), ])

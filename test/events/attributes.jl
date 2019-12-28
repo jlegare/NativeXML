@@ -191,20 +191,16 @@
 
     @testset "Events/Attributes (Negative ... unescaped special characters)" begin
         @test (evaluate("<a b=\"<\">")
-               == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '<' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ],
+               == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '<' must be escaped inside an attribute value.", [ ],
                                                          L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ],
                        L.Location("a buffer", -1)) ])
 
         @test (evaluate("<a b=\"<<<\">")
-               == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '<' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ],
+               == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '<' must be escaped inside an attribute value.", [ ],
                                                          L.Location("a buffer", -1)),
-                                                      ME("ERROR: A '<' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ],
+                                                      ME("ERROR: A '<' must be escaped inside an attribute value.", [ ],
                                                          L.Location("a buffer", -1)),
-                                                      ME("ERROR: A '<' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ],
+                                                      ME("ERROR: A '<' must be escaped inside an attribute value.", [ ],
                                                          L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ],
                     L.Location("a buffer", -1)) ])
 
@@ -212,35 +208,29 @@
                == [ ES(false, false, "a", [ AS("b", [ DC("Hello", false, L.Location("a buffer", -1)),
                                                       DC(",", false, L.Location("a buffer", -1)),
                                                       DC(" ", true, L.Location("a buffer", -1)),
-                                                      ME("ERROR: A '<' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.stago, "<", L.Location("a buffer", -1)) ],
+                                                      ME("ERROR: A '<' must be escaped inside an attribute value.", [ ],
                                                          L.Location("a buffer", -1)),
                                                       DC("World!", false, L.Location("a buffer", -1)) ],
                                             L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ])
 
         @test (evaluate("<a b=\"&\">")
-               == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '&' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ],
+               == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '&' must be escaped inside an attribute value.", [ ],
                                                          L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ],
                        L.Location("a buffer", -1)) ])
 
         @test (evaluate("<a b=\"&&&\">")
-               == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '&' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ],
+               == [ ES(false, false, "a", [ AS("b", [ ME("ERROR: A '&' must be escaped inside an attribute value.", [ ],
                                                          L.Location("a buffer", -1)),
-                                                      ME("ERROR: A '&' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ],
+                                                      ME("ERROR: A '&' must be escaped inside an attribute value.", [ ],
                                                          L.Location("a buffer", -1)),
-                                                      ME("ERROR: A '&' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ],
+                                                      ME("ERROR: A '&' must be escaped inside an attribute value.", [ ],
                                                          L.Location("a buffer", -1)) ], L.Location("a buffer", -1)) ],
                     L.Location("a buffer", -1)) ])
 
         @test (evaluate("<a b=\"Jack & Jill\">")
                == [ ES(false, false, "a", [ AS("b", [ DC("Jack", false, L.Location("a buffer", -1)),
                                                       DC(" ", true, L.Location("a buffer", -1)),
-                                                      ME("ERROR: A '&' must be escaped inside an attribute value.",
-                                                         [ L.Token(L.ero, "&", L.Location("a buffer", -1)) ],
+                                                      ME("ERROR: A '&' must be escaped inside an attribute value.", [ ],
                                                          L.Location("a buffer", -1)),
                                                       DC(" ", true, L.Location("a buffer", -1)),
                                                       DC("Jill", false, L.Location("a buffer", -1)) ],
