@@ -10,7 +10,6 @@
     @testset "Lexical/Single Tokens (Single Character)" begin
         @test evaluate("[")  == [ L.Token(L.dso, "[", L.Location("a buffer", -1)) ]
         @test evaluate("]")  == [ L.Token(L.dsc, "]", L.Location("a buffer", -1)) ]
-        @test evaluate("#")  == [ L.Token(L.rni, "#", L.Location("a buffer", -1)) ]
         @test evaluate("\"") == [ L.Token(L.lit, "\"", L.Location("a buffer", -1)) ]
         @test evaluate("'")  == [ L.Token(L.lita, "'", L.Location("a buffer", -1)) ]
         @test evaluate("(")  == [ L.Token(L.grpo, "(", L.Location("a buffer", -1)) ]
@@ -31,27 +30,31 @@
     end
 
     @testset "Lexical/Single Tokens (Two Character)" begin
-        @test evaluate("<!")  == [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ]
-        @test evaluate("]]")  == [ L.Token(L.msc, "]]", L.Location("a buffer", -1)) ]
-        @test evaluate("--")  == [ L.Token(L.com, "--", L.Location("a buffer", -1)) ]
-        @test evaluate("&#")  == [ L.Token(L.cro, "&#", L.Location("a buffer", -1)) ]
-        @test evaluate("<?")  == [ L.Token(L.pio, "<?", L.Location("a buffer", -1)) ]
-        @test evaluate("</")  == [ L.Token(L.etago, "</", L.Location("a buffer", -1)) ]
+        @test evaluate("<!") == [ L.Token(L.mdo, "<!", L.Location("a buffer", -1)) ]
+        @test evaluate("]]") == [ L.Token(L.msc, "]]", L.Location("a buffer", -1)) ]
+        @test evaluate("--") == [ L.Token(L.com, "--", L.Location("a buffer", -1)) ]
+        @test evaluate("&#") == [ L.Token(L.cro, "&#", L.Location("a buffer", -1)) ]
+        @test evaluate("<?") == [ L.Token(L.pio, "<?", L.Location("a buffer", -1)) ]
+        @test evaluate("</") == [ L.Token(L.etago, "</", L.Location("a buffer", -1)) ]
+    end
+
+    @testset "Lexical/Troublesome Tokens (One Character)" begin
+        @test evaluate("#") == [ L.Token(L.text, "#", L.Location("a buffer", -1)) ]
     end
 
     @testset "Lexical/Troublesome Tokens (Two Character)" begin
-        @test evaluate("?>")  == [ L.Token(L.opt, "?", L.Location("a buffer", -1)),
-                                   L.Token(L.tagc, ">", L.Location("a buffer", -1)) ]
+        @test evaluate("?>") == [ L.Token(L.opt, "?", L.Location("a buffer", -1)),
+                                  L.Token(L.tagc, ">", L.Location("a buffer", -1)) ]
     end
 
     @testset "Lexical/Single Tokens (Basic Text)" begin
-        @test evaluate("a")    == [ L.Token(L.text, "a", L.Location("a buffer", -1)) ]
-        @test evaluate("ab")   == [ L.Token(L.text, "ab", L.Location("a buffer", -1)) ]
-        @test evaluate("abc")  == [ L.Token(L.text, "abc", L.Location("a buffer", -1)) ]
-        @test evaluate("∈")    == [ L.Token(L.text, "∈", L.Location("a buffer", -1)) ]
-        @test evaluate("a∈")   == [ L.Token(L.text, "a∈", L.Location("a buffer", -1)) ]
-        @test evaluate("∈b")   == [ L.Token(L.text, "∈b", L.Location("a buffer", -1)) ]
-        @test evaluate("a∈b")  == [ L.Token(L.text, "a∈b", L.Location("a buffer", -1)) ]
+        @test evaluate("a")   == [ L.Token(L.text, "a", L.Location("a buffer", -1)) ]
+        @test evaluate("ab")  == [ L.Token(L.text, "ab", L.Location("a buffer", -1)) ]
+        @test evaluate("abc") == [ L.Token(L.text, "abc", L.Location("a buffer", -1)) ]
+        @test evaluate("∈")   == [ L.Token(L.text, "∈", L.Location("a buffer", -1)) ]
+        @test evaluate("a∈")  == [ L.Token(L.text, "a∈", L.Location("a buffer", -1)) ]
+        @test evaluate("∈b")  == [ L.Token(L.text, "∈b", L.Location("a buffer", -1)) ]
+        @test evaluate("a∈b") == [ L.Token(L.text, "a∈b", L.Location("a buffer", -1)) ]
     end
 
     @testset "Lexical/Single Tokens (White Space)" begin

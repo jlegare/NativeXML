@@ -418,7 +418,7 @@ function element_declaration(mdo, tokens, channel)
             consume_white_space!(tokens)
 
             if is_reserved_name("#PCDATA", tokens, channel)
-                take!(tokens) # Notice this only taking the "PCDATA" portion ... the '#' got consumed by is_reserved_name().
+                take!(tokens)
                 consume_white_space!(tokens)
 
                 items = collect_mixed_content_model(tokens, channel)
@@ -1407,14 +1407,8 @@ end
 
 
 function is_reserved_name(keyword, tokens, channel)
-    # Note that if we see RNI but not the desired keyword, we've neverthless consumed the RNI.
-    #
-    # The first two conditions here are (hopefully) a little pedantic.
-    #
-    if length(keyword) > 1 && (keyword[1] == '#') && is_token(Lexical.rni, tokens)
-        rni = take!(tokens)
-
-        return is_keyword(keyword[2:end], tokens, channel)
+    if length(keyword) > 1 && (keyword[1] == '#') && is_token(Lexical.text, tokens)
+        return is_keyword(keyword, tokens, channel)
 
     else
         return false

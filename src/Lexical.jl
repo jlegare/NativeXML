@@ -103,7 +103,7 @@ const TwoCharacterTokens = Dict([ '<', '!' ] => mdo,
 const OneCharacterTokens = Dict('>'  => mdc, # Again, this will never show up ... we'll always emit tagc instead.
                                 '['  => dso,
                                 ']'  => dsc,
-                                '#'  => rni,
+                                # '#'  => rni, ... Including this as a token in XML makes parsing reserved names a pain.
                                 '\"' => lit,
                                 '\'' => lita,
                                 '('  => grpo,
@@ -122,7 +122,7 @@ const OneCharacterTokens = Dict('>'  => mdc, # Again, this will never show up ..
                                 '>'  => tagc,
                                 '/'  => net,
                                 '='  => vi)
-const TokenStarts = Set([ '\"', '#', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '/', ';', '<', '=', '>', '?', '[', ']', '|' ])
+const TokenStarts = Set([ '\"', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '/', ';', '<', '=', '>', '?', '[', ']', '|' ])
 const WhiteSpaces = Set([ '\u20', '\u09', '\u0a', '\u0d' ])
 
 # ----------------------------------------

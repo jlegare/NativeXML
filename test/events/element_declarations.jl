@@ -442,8 +442,7 @@
                     DC("a", false, L.Location("a buffer", -1)),
                     DC(" ", true, L.Location("a buffer", -1)),
                     DC("(", false, L.Location("a buffer", -1)),
-                    DC("#", false, L.Location("a buffer", -1)),
-                    DC("PCDATA", false, L.Location("a buffer", -1)),
+                    DC("#PCDATA", false, L.Location("a buffer", -1)),
                     DC(")", false, L.Location("a buffer", -1)),
                     DC(">", false, L.Location("a buffer", -1)), ])
 
