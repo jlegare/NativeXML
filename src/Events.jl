@@ -213,12 +213,6 @@ DataContent(value, location) = DataContent(value, false, location)
 
 # These are needed for writing tests, because these types contain other structs inside an array.
 #
-function Base.:(==)(left::MarkupError, right::MarkupError)
-    return (left.message     == right.message
-            && left.location == right.location)
-end
-
-
 function Base.:(==)(left::ElementStart, right::ElementStart)
     return (left.is_recovery   == right.is_recovery
             && left.name       == right.name
