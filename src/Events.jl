@@ -469,18 +469,7 @@ function element_declaration(mdo, tokens, channel)
                         is_recovery = true
                     end
 
-                    if is_token(Lexical.opt, tokens)
-                        take!(tokens)
-                        content_model = ContentModels.Optional(content_model)
-
-                    elseif is_token(Lexical.rep, tokens)
-                        take!(tokens)
-                        content_model = ContentModels.ZeroOrMore(content_model)
-
-                    elseif is_token(Lexical.plus, tokens)
-                        take!(tokens)
-                        content_model = ContentModels.OneOrMore(content_model)
-                    end
+                    content_model = collect_occurrence_indicator(content_model, tokens)
                 end
             end
 
@@ -1082,18 +1071,7 @@ function collect_content_model_group_item(grpo, tokens, channel)
             put!(channel, MarkupError("ERROR: Expecting ')' to end a content model group.", Lexical.location_of(grpo)))
         end
 
-        if is_token(Lexical.opt, tokens)
-            take!(tokens)
-            item = ContentModels.Optional(item)
-
-        elseif is_token(Lexical.rep, tokens)
-            take!(tokens)
-            item = ContentModels.ZeroOrMore(item)
-
-        elseif is_token(Lexical.plus, tokens)
-            take!(tokens)
-            item = ContentModels.OneOrMore(item)
-        end
+        item = collect_occurrence_indicator(item, tokens)
 
         consume_white_space!(tokens) # In case we saw an occurrence indicator.
 
@@ -1242,6 +1220,28 @@ function collect_mixed_content_model(tokens, channel)
     end
 
     return items
+end
+
+
+function collect_occurrence_indicator(content_model, tokens)
+    if is_token(Lexical.opt, tokens)
+        take!(tokens)
+
+        return ContentModels.Optional(content_model)
+
+    elseif is_token(Lexical.rep, tokens)
+        take!(tokens)
+
+        return ContentModels.ZeroOrMore(content_model)
+
+    elseif is_token(Lexical.plus, tokens)
+        take!(tokens)
+
+        return ContentModels.OneOrMore(content_model)
+
+    else
+        return content_model
+    end
 end
 
 
