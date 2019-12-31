@@ -38,18 +38,18 @@
     end
 
 
-    function build_names(character_range)
+    function build_values(character_range)
         return select_characters(character_range)
     end
 
-    function build_names(first_character_range, second_character_range)
+    function build_values(first_character_range, second_character_range)
         first_set  = select_characters(first_character_range)
         second_set = select_characters(second_character_range)
 
         return vec([ f * s for f ∈ first_set, s ∈ second_set ])
     end
 
-    function build_names(first_character_range, second_character_range, third_character_range)
+    function build_values(first_character_range, second_character_range, third_character_range)
         first_set  = select_characters(first_character_range)
         second_set = select_characters(second_character_range)
         third_set  = select_characters(third_character_range)
@@ -62,18 +62,18 @@
         # somewhere in the middle (selected randomly)
         #
         for name_start_char ∈ name_start_chars
-            for name ∈ build_names(name_start_char)
+            for name ∈ build_values(name_start_char)
                 tokens = tokenize(name)
                 @test E.is_name(tokens)
                 @test length(collect(tokens)) == 1
             end
         end
 
-        # Now some two-character cases, where both characters come from NameStartChar
+        # Now some two-character cases, where both characters come from NameStartChar.
         #
         for name_start_char ∈ name_start_chars
             for name_char ∈ name_start_chars
-                for name ∈ build_names(name_start_char, name_char)
+                for name ∈ build_values(name_start_char, name_char)
                     tokens = tokenize(name)
                     @test E.is_name(tokens)
                     @test length(collect(tokens)) == 1
@@ -85,7 +85,7 @@
         #
         for name_start_char ∈ name_start_chars
             for name_char ∈ name_chars
-                for name ∈ build_names(name_start_char, name_char)
+                for name ∈ build_values(name_start_char, name_char)
                     tokens = tokenize(name)
                     @test E.is_name(tokens)
                     @test length(collect(tokens)) == 1
@@ -102,10 +102,50 @@
         second_name_char = rand(all_name_chars)
         third_name_char  = rand(all_name_chars)
 
-        name = rand(build_names(name_start_char, second_name_char, third_name_char))
+        name = rand(build_values(name_start_char, second_name_char, third_name_char))
 
         tokens = tokenize(name)
         @test E.is_name(tokens)
+        @test length(collect(tokens)) == 1
+    end
+
+    @testset "Events/Miscellaneous, is_nmtoken() (Positive)" begin
+        # First some trivial cases ... basically trigger each branch. If it's a range, trigger it at each extreme and
+        # somewhere in the middle (selected randomly)
+        #
+        for name_char ∈ name_chars
+            for nmtoken ∈ build_values(name_char)
+                tokens = tokenize(nmtoken)
+                @test E.is_nmtoken(tokens)
+                @test length(collect(tokens)) == 1
+            end
+        end
+
+        # Now some two-character cases.
+        #
+        for first_name_char ∈ name_chars
+            for second_name_char ∈ name_chars
+                for nmtoken ∈ build_values(first_name_char, second_name_char)
+                    tokens = tokenize(nmtoken)
+                    @test E.is_nmtoken(tokens)
+                    @test length(collect(tokens)) == 1
+                end
+            end
+        end
+
+        # Finally, some three character-cases. Trying combinations like we did earlier could take way too much time. So
+        # we'll randomly construct one and test it.
+        #
+        all_name_chars = vcat(name_start_chars, name_chars)
+
+        first_name_char  = rand(all_name_chars)
+        second_name_char = rand(all_name_chars)
+        third_name_char  = rand(all_name_chars)
+
+        nmtoken = rand(build_values(first_name_char, second_name_char, third_name_char))
+
+        tokens = tokenize(nmtoken)
+        @test E.is_nmtoken(tokens)
         @test length(collect(tokens)) == 1
     end
 
@@ -113,7 +153,7 @@
         # Negative tests for single-character names are easy enough ... just choose a character from NameChar.
         #
         for name_start_char ∈ name_chars
-            for name ∈ build_names(name_start_char)
+            for name ∈ build_values(name_start_char)
                 tokens = tokenize(name)
                 @test !E.is_name(tokens)
             end
@@ -124,7 +164,7 @@
         #
         for first_char ∈ [ 'a' ]
             for second_char ∈ other_chars
-                for name ∈ build_names(first_char, second_char)
+                for name ∈ build_values(first_char, second_char)
                     tokens = tokenize(name)
                     @test !E.is_name(tokens)
                     @test length(collect(tokens)) == 1
@@ -137,6 +177,38 @@
         for input ∈ [ "+", "<", "<!", " ", "<?", "?>", ">", "" ]
             tokens = tokenize(input)
             @test !E.is_name(tokens)
+        end
+    end
+
+    @testset "Events/Miscellaneous, is_nmtoken() (Negative)" begin
+        # Negative tests for single-character nmtokens are easy enough ... just choose a character from other_chars,
+        # defined above.
+        #
+        for name_char ∈ other_chars
+            for nmtoken ∈ build_values(name_char)
+                tokens = tokenize(nmtoken)
+                @test !E.is_nmtoken(tokens)
+            end
+        end
+
+        # For two character-cases, uses a "safe" character for the first position, and pull the second character from
+        # other_chars, defined above.
+        #
+        for first_char ∈ [ 'a' ]
+            for second_char ∈ other_chars
+                for nmtoken ∈ build_values(first_char, second_char)
+                    tokens = tokenize(nmtoken)
+                    @test !E.is_nmtoken(tokens)
+                    @test length(collect(tokens)) == 1
+                end
+            end
+        end
+
+        # Finally, make sure that is_name() doesn't try accepting tokens that aren't of type text to begin with.
+        #
+        for input ∈ [ "+", "<", "<!", " ", "<?", "?>", ">", "" ]
+            tokens = tokenize(input)
+            @test !E.is_nmtoken(tokens)
         end
     end
 end
