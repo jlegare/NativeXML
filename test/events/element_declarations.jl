@@ -6,18 +6,18 @@
 
     ED = Events.ElementDeclaration
 
-    CMAny   = Events.ContentModels.AnyModel
-    CMEmpty = Events.ContentModels.EmptyModel
-    CMMixed = Events.ContentModels.MixedModel
+    CMAny   = Events.AnyModel
+    CMEmpty = Events.EmptyModel
+    CMMixed = Events.MixedModel
 
-    CMElement = Events.ContentModels.ElementModel
+    CMElement = Events.ElementModel
 
-    Choice   = Events.ContentModels.ChoiceGroup
-    Sequence = Events.ContentModels.SequenceGroup
+    Choice   = Events.ChoiceGroup
+    Sequence = Events.SequenceGroup
 
-    OneOrMore  = Events.ContentModels.OneOrMore
-    Optional   = Events.ContentModels.Optional
-    ZeroOrMore = Events.ContentModels.ZeroOrMore
+    OneOrMore  = Events.OneOrMore
+    Optional   = Events.Optional
+    ZeroOrMore = Events.ZeroOrMore
 
     DC = E.DataContent
     ME = E.MarkupError

@@ -16,14 +16,18 @@ export events
 # ----------------------------------------
 
 include("./Lexical.jl")
-include("./ContentModels.jl")
 
 import .Lexical
-import .ContentModels
 
 # ----------------------------------------
 # TYPE DECLARATIONS
 # ----------------------------------------
+
+# This is used for element declarations only, but has to be declared earlier because it appears in ElementDeclaration.
+#
+abstract type AbstractModel
+end
+
 
 struct ExternalIdentifier
     public_identifier ::Union{Nothing, String}
@@ -92,7 +96,7 @@ end
 struct ElementDeclaration
     is_recovery   ::Bool
     name          ::String
-    content_model ::ContentModels.AbstractModel
+    content_model ::AbstractModel
     location      ::Lexical.Location
 end
 
@@ -167,7 +171,7 @@ end
 
 struct AttributeSpecification
     name     ::String
-    value    ::Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter, MarkupError}, 1}
+    value    ::Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter}, 1}
     location ::Lexical.Location
 end
 
@@ -195,6 +199,125 @@ struct ConditionalSectionStart
     is_recovery ::Bool
     conditional ::Union{String, EntityReferenceParameter}
     location    ::Lexical.Location
+end
+
+
+# These are for element declarations.
+#
+struct AnyModel <: AbstractModel
+end
+
+
+struct ElementModel <: AbstractModel
+    element_name ::String
+end
+
+
+struct EmptyModel <: AbstractModel
+end
+
+
+struct MixedModel <: AbstractModel
+   items ::Array{AbstractModel, 1}
+end
+
+
+struct ChoiceGroup <: AbstractModel
+   items ::Array{AbstractModel, 1}
+end
+
+
+struct SequenceGroup <: AbstractModel
+   items ::Array{AbstractModel, 1}
+end
+
+
+struct OneOrMore <: AbstractModel
+   item ::AbstractModel
+end
+
+
+struct Optional <: AbstractModel
+   item ::AbstractModel
+end
+
+
+struct ZeroOrMore <: AbstractModel
+   item ::AbstractModel
+end
+
+
+# These are for attribute declarations.
+#
+struct EntityType
+end
+
+
+struct EntitiesType
+end
+
+
+struct EnumeratedNotationType
+    names ::Array{String, 1}
+end
+
+
+struct EnumeratedType
+    nmtokens ::Array{String, 1}
+end
+
+
+struct IDRefType
+end
+
+
+struct IDRefsType
+end
+
+
+struct IDType
+end
+
+
+struct NameTokenType
+end
+
+
+struct NameTokensType
+end
+
+
+struct StringType
+end
+
+
+struct DefaultValue
+    is_fixed ::Bool
+    value    ::Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter}, 1}
+end
+
+
+struct Implied
+end
+
+
+struct Required
+end
+
+
+struct AttributeDeclaration
+    is_recovery ::Bool # This basically is a synthesized attribute.
+    name        ::String
+    type        ::Union{EntityType, EntitiesType, EnumeratedNotationType, EnumeratedType, IDRefType,
+                        IDRefsType, IDType, NameTokenType, NameTokensType, StringType}
+    default     ::Union{DefaultValue, Implied, Required}
+end
+
+
+struct AttributeDeclarations
+    is_recovery  ::Bool # This is a synthesized attribute, synthesized from the contained AttributeDeclaration children.
+    name         ::String
+    declarations ::Array{AttributeDeclaration, 1}
 end
 
 # ----------------------------------------
@@ -233,6 +356,255 @@ function Base.:(==)(left::ElementDeclaration, right::ElementDeclaration)
             && left.name          == right.name
             && left.content_model == right.content_model
             && left.location      == right.location)
+end
+
+
+function Base.:(==)(left::MixedModel, right::MixedModel)
+    return left.items == right.items
+end
+
+
+function Base.:(==)(left::OneOrMore, right::OneOrMore)
+    return left.item == right.item
+end
+
+
+function Base.:(==)(left::Optional, right::Optional)
+    return left.item == right.item
+end
+
+
+function Base.:(==)(left::ZeroOrMore, right::ZeroOrMore)
+    return left.item == right.item
+end
+
+
+function Base.:(==)(left::ChoiceGroup, right::ChoiceGroup)
+    return left.items == right.items
+end
+
+
+function Base.:(==)(left::SequenceGroup, right::SequenceGroup)
+    return left.items == right.items
+end
+
+
+function attribute_declarations(mdo, tokens, channel)
+    function attribute_declaration(element_name, tokens, channel)
+        attribute_name = take!(tokens) # Collect the attribute name token that got us here ...
+        consume_white_space!(tokens)   # ... but discard any following white space.
+
+        ( attribute_type_recovery, attribute_type ) = collect_attribute_type(element_name, attribute_name, tokens, channel)
+        consume_white_space!(tokens) # Discard any trailing white space.
+
+        ( attribute_default_recovery, attribute_default ) = collect_attribute_default(element_name, attribute_name, tokens, channel)
+
+        return AttributeDeclaration(any([ attribute_type_recovery, attribute_default_recovery ]),
+                                    attribute_name.value, attribute_type, attribute_default)
+    end
+
+    function collect_attribute_default(element_name, attribute_name, tokens, channel)
+        attribute_default = Implied()
+        is_recovery       = false
+
+        if is_reserved_name("#IMPLIED", tokens, channel)
+            take!(tokens)
+
+        elseif is_reserved_name("#REQUIRED", tokens, channel)
+            take!(tokens)
+            attribute_default = Required()
+
+        else
+            is_fixed = false
+            if is_reserved_name("#FIXED", tokens, channel)
+                is_fixed = true
+                take!(tokens)
+                consume_white_space!(tokens)
+            end
+
+            ( value_recovery, value ) = collect_attribute_value(attribute_name, tokens, channel)
+
+            attribute_default = DefaultValue(is_fixed, value)
+            is_recovery = any([ is_recovery, value_recovery ])
+        end
+
+        return ( is_recovery, attribute_default )
+    end
+
+    function collect_attribute_type(element_name, attribute_name, tokens, channel)
+        attribute_type = StringType()
+        is_recovery    = false
+
+        if is_keyword("CDATA", tokens, channel)
+            take!(tokens)
+
+        elseif is_keyword("ENTITY", tokens, channel)
+            take!(tokens)
+            attribute_type = EntityType()
+
+        elseif is_keyword("ENTITIES", tokens, channel)
+            take!(tokens)
+            attribute_type = EntitiesType()
+
+        elseif is_keyword("IDREF", tokens, channel)
+            take!(tokens)
+            attribute_type = IDRefType()
+
+        elseif is_keyword("IDREFS", tokens, channel)
+            take!(tokens)
+            attribute_type = IDRefsType()
+
+        elseif is_keyword("ID", tokens, channel)
+            take!(tokens)
+            attribute_type = IDType()
+
+        elseif is_keyword("NMTOKEN", tokens, channel)
+            take!(tokens)
+            attribute_type = NameTokenType()
+
+        elseif is_keyword("NMTOKENS", tokens, channel)
+            take!(tokens)
+            attribute_type = NameTokensType()
+
+        elseif is_keyword("NOTATION", tokens, channel)
+            notation = take!(tokens)
+            ws = consume_white_space!(tokens)
+
+            if isnothing(ws)
+                # See [1], § 3.3.1 ... the white space is required. This is really bogus, because the only thing that
+                # can follow NOTATION in this position is an open parenthesis, so there would be no ambiguity in making
+                # the white space optional
+                #
+                put!(channel, MarkupError("ERROR: White space is required following the 'NOTATION' keyword.",
+                                          Lexical.location_of(notation)))
+                is_recovery = true
+            end
+
+            if !is_token(Lexical.grpo, tokens)
+                put!(channel, MarkupError("ERROR: Expecting '(' to open an enumerated notation attribute value.",
+                                          Lexical.location_of(notation)))
+                is_recovery = true
+            end
+
+            # Regardless of whether or not we saw GRPO, try parsing the group as a recovery mechanism.
+            #
+            ( names_recovery, names ) = collect_group(is_name, "ERROR: Expecting a name for an enumerated attribute value.",
+                                                      tokens, channel)
+            is_recovery = any([ is_recovery, names_recovery ])
+            attribute_type = EnumeratedNotationType(names)
+
+        elseif is_token(Lexical.grpo, tokens)
+            ( nmtokens_recovery, nmtokens ) = collect_group(is_nmtoken,
+                                                            "ERROR: Expecting a NMTOKEN for an enumerated attribute value.",
+                                                            tokens, channel)
+            is_recovery = any([ is_recovery, nmtokens_recovery ])
+            attribute_type = EnumeratedType(nmtokens)
+
+        else
+            put!(channel, MarkupError("ERROR: Expecting an attribute type.", Lexical.location_of(attribute_name)))
+        end
+
+        return ( is_recovery, attribute_type )
+    end
+
+    function collect_group(matcher, message, tokens, channel)
+        grpo = take!(tokens)
+        consume_white_space!(tokens)
+
+        items = Array{String, 1}()
+        is_recovery = false
+
+        while true
+            if matcher(tokens)
+                push!(items, take!(tokens).value)
+                consume_white_space!(tokens)
+
+            elseif is_token(Lexical.or, tokens) || is_token(Lexical.grpc, tokens)
+                # Leave the token there ... we'll consume it below.
+                #
+                put!(channel, MarkupError(message, Lexical.location_of(grpo)))
+                is_recovery = true
+
+            else
+                put!(channel, MarkupError(message, Lexical.location_of(grpo)))
+                is_recovery = true
+                take!(tokens) # Drop the token and try recovering.
+                consume_white_space!(tokens)
+            end
+
+            if is_token(Lexical.or, tokens)
+                take!(tokens)
+                consume_white_space!(tokens)
+
+            elseif is_token(Lexical.grpc, tokens)
+                take!(tokens)
+                consume_white_space!(tokens)
+                break
+
+            elseif matcher(tokens)
+                put!(channel, MarkupError("ERROR: Expecting '|' between items in an enumerated attribute value.",
+                                          Lexical.location_of(grpo)))
+                is_recovery = true
+                push!(items, take!(tokens).value)
+                consume_white_space!(tokens)
+
+            else
+                put!(channel, MarkupError("ERROR: Expecting '|' or ')'.", Lexical.location_of(grpo)))
+                is_recovery = true
+                break
+            end
+        end
+
+        return ( is_recovery, items )
+    end
+
+    attlist = take!(tokens) # Consume the ATTLIST keyword that got us here.
+    ws = consume_white_space!(tokens)
+
+    if isnothing(ws)
+        # See [1], § 3.3 ... the white space is required.
+        #
+        put!(channel, MarkupError("ERROR: White space is required following the 'ATTLIST' keyword.", Lexical.location_of(attlist)))
+        is_recovery = true
+    end
+
+    if is_name(tokens)
+        element_name = take!(tokens)
+
+        attribute_declarations = Array{AttributeDeclaration, 1}()
+
+        while true
+            if is_token(Lexical.ws, tokens)
+                consume_white_space!(tokens)
+
+                if is_name(tokens)
+                    push!(attribute_declarations, attribute_declaration(element_name, tokens, channel))
+
+                else
+                    break
+                end
+
+            else
+                break
+            end
+        end
+
+        if is_token(Lexical.tagc, tokens)
+            take!(tokens)
+
+        else
+            is_recovery = true
+            put!(channel, MarkupError("ERROR: Expecting '>' to end an attribute list declaration.",
+                                      Lexical.location_of(element_name)))
+        end
+
+        is_recovery = any(vcat(is_recovery, map(declaration -> declaration.is_recovery, attribute_declarations)))
+
+        put!(channel, AttributeDeclarations(is_recovery, element_name.value, attribute_declarations))
+
+    else
+        put!(channel, MarkupError("ERROR: Expecting an element name.", Lexical.location_of(attlist)))
+    end
 end
 
 
@@ -403,15 +775,15 @@ function element_declaration(mdo, tokens, channel)
             is_recovery = true
         end
 
-        content_model = ContentModels.AnyModel()
+        content_model = AnyModel()
 
         if is_keyword("ANY", tokens, channel)
             take!(tokens)
-            content_model = ContentModels.AnyModel()
+            content_model = AnyModel()
 
         elseif is_keyword("EMPTY", tokens, channel)
             take!(tokens)
-            content_model = ContentModels.EmptyModel()
+            content_model = EmptyModel()
 
         elseif is_token(Lexical.grpo, tokens)
             grpo = take!(tokens)
@@ -444,13 +816,13 @@ function element_declaration(mdo, tokens, channel)
                     is_recovery = true
                 end
 
-                content_model = ContentModels.MixedModel(items)
+                content_model = MixedModel(items)
 
             else
                 content_model = collect_content_model_group(grpo, tokens, channel)
 
                 if isnothing(content_model)
-                    content_model = ContentModels.AnyModel()
+                    content_model = AnyModel()
 
                 else
                     if is_token(Lexical.grpc, tokens)
@@ -518,8 +890,8 @@ function element_start(tokens, channel)
 
     if is_name(tokens)
         name = take!(tokens)
-        attributes = collect_attributes(tokens) # We should really slip the is_recovery flag on the ElementStart if any
-                                                # of the attributes contain a MarkupError.
+        attributes = collect_attributes(tokens, channel) # We should really flip the is_recovery flag on the
+                                                         # ElementStart if any of the attributes contain a MarkupError.
         consume_white_space!(tokens)
 
         if is_token(Lexical.net, tokens)
@@ -671,10 +1043,10 @@ function events(state::Lexical.State)
                 markup_declaration(tokens, channel)
 
             elseif is_token(Lexical.cro, tokens)
-                put!(channel, character_reference(tokens))
+                put!(channel, collect_character_reference(tokens, channel))
 
             elseif is_token(Lexical.ero, tokens)
-                put!(channel, collect_entity_reference(tokens))
+                put!(channel, collect_entity_reference(tokens, channel))
 
             elseif is_token(Lexical.pero, tokens)
                 put!(channel, collect_parameter_entity_reference(tokens))
@@ -765,9 +1137,7 @@ function markup_declaration(tokens, channel)
         comment(mdo, tokens, channel)
 
     elseif is_keyword("ATTLIST", tokens, channel)
-        # This is temporary until I write the attribute declaration parser.
-        #
-        put!(channel, MarkupError("ERROR: Expecting the start of a markup declaration.", Lexical.location_of(mdo)))
+        attribute_declarations(mdo, tokens, channel)
 
     elseif is_keyword("DOCTYPE", tokens, channel)
         document_type_declaration(mdo, tokens, channel)
@@ -878,81 +1248,70 @@ end
 # Small parsers return the event rather than emitting it to a channel. They can, however, emit markup errors.
 # ----------------------------------------
 
-function character_reference(tokens)
-    cro = take!(tokens) # Consume the CRO token that got us here.
+function collect_attribute_value(start, tokens, channel)
+    value       = Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter}, 1}()
+    is_recovery = false
 
-    if is_token(Lexical.text, tokens)
-        value = take!(tokens)
-        if is_token(Lexical.refc, tokens)
-            refc = take!(tokens)
+    if is_token(Lexical.lit, tokens) || is_token(Lexical.lita, tokens)
+        delimiter = take!(tokens)
 
-            return CharacterReference(value.value, Lexical.location_of(cro))
+        while true
+            if is_eoi(tokens)
+                put!(channel, MarkupError("ERROR: Expecting the remainder of an attribute value.", Lexical.location_of(start)))
+                is_recovery = true
+                break
 
-        else
-            return MarkupError("ERROR: Expecting ';' to end a character reference.", Lexical.location_of(value))
+            elseif fetch(tokens).token_type == delimiter.token_type
+                take!(tokens)
+                break
+
+            elseif is_token(Lexical.cro, tokens)
+                push!(value, collect_character_reference(tokens, channel))
+
+            elseif is_token(Lexical.ero, tokens)
+                push!(value, collect_entity_reference(tokens, channel, true))
+
+            elseif is_token(Lexical.stago, tokens)
+                stago = take!(tokens)
+                put!(channel, MarkupError("ERROR: A '<' must be escaped inside an attribute value.", Lexical.location_of(stago)))
+                is_recovery = true
+
+            elseif is_token(Lexical.ws, tokens)
+                ws = consume_white_space!(tokens)
+                push!(value, DataContent(ws.value, true, Lexical.location_of(ws)))
+
+            else
+                data_content = take!(tokens)
+                push!(value, DataContent(data_content.value, Lexical.location_of(data_content)))
+            end
         end
 
     else
-        return MarkupError("ERROR: Expecting a character value.", Lexical.location_of(cro))
+        put!(channel, MarkupError("ERROR: Expecting a quoted attribute value.", Lexical.location_of(start)))
+        is_recovery = true
     end
+
+    return ( is_recovery, value )
 end
 
 
-function collect_attributes(tokens)
-    function collect_attribute(tokens)
+function collect_attributes(tokens, channel)
+    function collect_attribute(tokens, channel)
         name = take!(tokens)         # Collect the attribute name token that got us here ...
         consume_white_space!(tokens) # ... but discard any following white space.
 
-        value = Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter, MarkupError}, 1}()
+        value = Array{Union{DataContent, CharacterReference, EntityReferenceGeneral, EntityReferenceParameter}, 1}()
 
         if is_token(Lexical.vi, tokens)
             vi = take!(tokens)
             consume_white_space!(tokens)
-            collect_attribute_value(vi, value, tokens)
+            ( _, value ) = collect_attribute_value(vi, tokens, channel)
 
         else
-            push!(value, MarkupError("ERROR: Expecting '=' after an attribute name.", Lexical.location_of(name)))
+            put!(channel, MarkupError("ERROR: Expecting '=' after an attribute name.", Lexical.location_of(name)))
         end
 
         return AttributeSpecification(name.value, value, Lexical.location_of(name))
-    end
-
-    function collect_attribute_value(vi, value, tokens)
-        if is_token(Lexical.lit, tokens) || is_token(Lexical.lita, tokens)
-            delimiter = take!(tokens)
-
-            while true
-                if is_eoi(tokens)
-                    push!(value, MarkupError("ERROR: Expecting the remainder of an attribute value.", Lexical.location_of(vi)))
-                    break
-
-                elseif fetch(tokens).token_type == delimiter.token_type
-                    take!(tokens)
-                    break
-
-                elseif is_token(Lexical.cro, tokens)
-                    push!(value, character_reference(tokens))
-
-                elseif is_token(Lexical.ero, tokens)
-                    push!(value, collect_entity_reference(tokens, true))
-
-                elseif is_token(Lexical.stago, tokens)
-                    stago = take!(tokens)
-                    push!(value, MarkupError("ERROR: A '<' must be escaped inside an attribute value.", Lexical.location_of(stago)))
-
-                elseif is_token(Lexical.ws, tokens)
-                    ws = consume_white_space!(tokens)
-                    push!(value, DataContent(ws.value, true, Lexical.location_of(ws)))
-
-                else
-                    data_content = take!(tokens)
-                    push!(value, DataContent(data_content.value, Lexical.location_of(data_content)))
-                end
-            end
-
-        else
-            push!(value, MarkupError("ERROR: Expecting a quoted attribute value after '='.", Lexical.location_of(vi)))
-        end
     end
 
 
@@ -963,7 +1322,7 @@ function collect_attributes(tokens)
             consume_white_space!(tokens)
 
             if is_name(tokens)
-                push!(attributes, collect_attribute(tokens))
+                push!(attributes, collect_attribute(tokens, channel))
 
             else
                 break
@@ -978,12 +1337,36 @@ function collect_attributes(tokens)
 end
 
 
+function collect_character_reference(tokens, channel)
+    cro = take!(tokens) # Consume the CRO token that got us here.
+
+    if is_token(Lexical.text, tokens)
+        value = take!(tokens)
+        if is_token(Lexical.refc, tokens)
+            refc = take!(tokens)
+
+            return CharacterReference(value.value, Lexical.location_of(cro))
+
+        else
+            put!(channel, MarkupError("ERROR: Expecting ';' to end a character reference.", Lexical.location_of(value)))
+
+            return DataContent([ cro, value ], Lexical.location_of(value))
+        end
+
+    else
+        put!(channel, MarkupError("ERROR: Expecting a character value.", Lexical.location_of(cro)))
+
+        return DataContent(cro.value, Lexical.location_of(cro))
+    end
+end
+
+
 function collect_content_model_group(grpo, tokens, channel)
     function collect_content_model_group_items(grpo, separator, tokens, channel)
         # By the time we're called, we've seen one group item and the separator (which has been consumed). See See [1],
         # § 3.2.1 ... we require another item.
         #
-        items = Array{ContentModels.AbstractModel, 1}()
+        items = Array{AbstractModel, 1}()
 
         while true
             item = collect_content_model_group_item(grpo, tokens, channel)
@@ -1030,10 +1413,10 @@ function collect_content_model_group(grpo, tokens, channel)
         pushfirst!(items, first_item)
 
         if separator.token_type == Lexical.or
-            return ContentModels.ChoiceGroup(items)
+            return ChoiceGroup(items)
 
         else
-            return ContentModels.SequenceGroup(items)
+            return SequenceGroup(items)
         end
 
     else
@@ -1047,7 +1430,7 @@ function collect_content_model_group_item(grpo, tokens, channel)
         name = take!(tokens)
         consume_white_space!(tokens)
 
-        return ContentModels.ElementModel(name.value)
+        return ElementModel(name.value)
 
     elseif is_token(Lexical.grpo, tokens)
         grpo = take!(tokens)
@@ -1079,7 +1462,7 @@ function collect_content_model_group_item(grpo, tokens, channel)
 end
 
 
-function collect_entity_reference(tokens, in_attribute = false)
+function collect_entity_reference(tokens, channel, in_attribute = false)
     ero = take!(tokens) # Consume the ERO token that got us here.
 
     if is_name(tokens)
@@ -1090,16 +1473,22 @@ function collect_entity_reference(tokens, in_attribute = false)
             return EntityReferenceGeneral(name.value, Lexical.location_of(ero))
 
         else
-            return MarkupError("ERROR: Expecting ';' to end an entity reference.", Lexical.location_of(name))
+            put!(channel, MarkupError("ERROR: Expecting ';' to end an entity reference.", Lexical.location_of(name)))
+
+            # Let's assume we saw the REFC.
+            #
+            return EntityReferenceGeneral(name.value, Lexical.location_of(ero))
         end
 
     else
         if in_attribute
-            return MarkupError("ERROR: A '&' must be escaped inside an attribute value.", Lexical.location_of(ero))
+            put!(channel, MarkupError("ERROR: A '&' must be escaped inside an attribute value.", Lexical.location_of(ero)))
 
         else
-            return MarkupError("ERROR: Expecting an entity name.", Lexical.location_of(ero))
+            put!(channel, MarkupError("ERROR: Expecting an entity name.", Lexical.location_of(ero)))
         end
+
+        return DataContent([ ero ], Lexical.location_of(ero))
     end
 end
 
@@ -1167,7 +1556,7 @@ end
 
 
 function collect_mixed_content_model(tokens, channel)
-    items = Array{ContentModels.AbstractModel, 1}()
+    items = Array{AbstractModel, 1}()
 
     while true
         if is_token(Lexical.or, tokens)
@@ -1177,7 +1566,7 @@ function collect_mixed_content_model(tokens, channel)
             if is_name(tokens)
                 name = take!(tokens)
                 consume_white_space!(tokens)
-                push!(items, ContentModels.ElementModel(name.value))
+                push!(items, ElementModel(name.value))
 
             elseif is_reserved_name("#PCDATA", tokens, channel)
                 put!(channel, MarkupError("ERROR: '#PCDATA' can only appear at the start of a mixed content model.",
@@ -1200,7 +1589,7 @@ function collect_mixed_content_model(tokens, channel)
             name = take!(tokens)
             consume_white_space!(tokens)
             put!(channel, MarkupError("ERROR: Items in a mixed content model must be separated by '|'.", Lexical.location_of(name)))
-            push!(items, ContentModels.ElementModel(name.value))
+            push!(items, ElementModel(name.value))
 
         elseif is_reserved_name("#PCDATA", tokens, channel)
             t = take!(tokens)
@@ -1221,17 +1610,17 @@ function collect_occurrence_indicator(content_model, tokens)
     if is_token(Lexical.opt, tokens)
         take!(tokens)
 
-        return ContentModels.Optional(content_model)
+        return Optional(content_model)
 
     elseif is_token(Lexical.rep, tokens)
         take!(tokens)
 
-        return ContentModels.ZeroOrMore(content_model)
+        return ZeroOrMore(content_model)
 
     elseif is_token(Lexical.plus, tokens)
         take!(tokens)
 
-        return ContentModels.OneOrMore(content_model)
+        return OneOrMore(content_model)
 
     else
         return content_model

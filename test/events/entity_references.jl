@@ -29,17 +29,20 @@
         # Check that a missing character specification is caught.
         #
         @test (evaluate("&#;") == [ ME("ERROR: Expecting a character value.", L.Location("a buffer", -1)),
+                                    DC("&#", false, L.Location("a buffer", -1)),
                                     DC(";", false, L.Location("a buffer", -1)) ])
 
         # Check that EOI is caught.
         #
-        @test (evaluate("&#") == [ ME("ERROR: Expecting a character value.", L.Location("a buffer", -1)) ])
+        @test (evaluate("&#") == [ ME("ERROR: Expecting a character value.", L.Location("a buffer", -1)),
+                                   DC("&#", false, L.Location("a buffer", -1)) ])
 
         # Check that a random token is caught.
         #
         events = evaluate("&#<")
-        @test length(events) == 2
+        @test length(events) == 3
         @test (events == [ ME("ERROR: Expecting a character value.", L.Location("a buffer", -1)),
+                           DC("&#", false, L.Location("a buffer", -1)),
                            ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)) ])
     end
 
@@ -47,13 +50,15 @@
         # Check that EOI is caught.
         #
         @test (evaluate("&#10")
-               == [ ME("ERROR: Expecting ';' to end a character reference.", L.Location("a buffer", -1)) ])
+               == [ ME("ERROR: Expecting ';' to end a character reference.", L.Location("a buffer", -1)),
+                    DC("&#10", false, L.Location("a buffer", -1)) ])
 
         # Check that a random token is caught.
         #
         events = evaluate("&#10<")
-        @test length(events) == 2
+        @test length(events) == 3
         @test (events == [ ME("ERROR: Expecting ';' to end a character reference.", L.Location("a buffer", -1)),
+                           DC("&#10", false, L.Location("a buffer", -1)),
                            ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)) ])
     end
 
@@ -76,19 +81,22 @@
         #
         @test (evaluate("&;")
                == [ ME("ERROR: Expecting an entity name.", L.Location("a buffer", -1)),
+                    DC("&", false, L.Location("a buffer", -1)),
                     DC(";", false, L.Location("a buffer", -1)) ])
 
 
         # Check that EOI is caught.
         #
         @test (evaluate("&")
-               == [ ME("ERROR: Expecting an entity name.", L.Location("a buffer", -1)) ])
+               == [ ME("ERROR: Expecting an entity name.", L.Location("a buffer", -1)),
+                    DC("&", false, L.Location("a buffer", -1)) ])
 
         # Check that a random token is caught.
         #
         events = evaluate("&<")
-        @test length(events) == 2
+        @test length(events) == 3
         @test (events == [ ME("ERROR: Expecting an entity name.", L.Location("a buffer", -1)),
+                           DC("&", false, L.Location("a buffer", -1)),
                            ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)) ])
     end
 
@@ -96,13 +104,15 @@
         # Check that EOI is caught.
         #
         @test (evaluate("&a")
-               == [ ME("ERROR: Expecting ';' to end an entity reference.", L.Location("a buffer", -1)) ])
+               == [ ME("ERROR: Expecting ';' to end an entity reference.", L.Location("a buffer", -1)),
+                    GenRef("a", L.Location("a buffer", -1)) ])
 
         # Check that a random token is caught.
         #
         events = evaluate("&a<")
-        @test length(events) == 2
+        @test length(events) == 3
         @test (events == [ ME("ERROR: Expecting ';' to end an entity reference.", L.Location("a buffer", -1)),
+                           GenRef("a", L.Location("a buffer", -1)),
                            ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)) ])
     end
 

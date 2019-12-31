@@ -9,13 +9,6 @@
     DC = E.DataContent
     ME = E.MarkupError
 
-    @testset "Events/Markup Declarations (Negative ... placeholders until parsers get written)" begin
-        events = evaluate("<!ATTLIST")
-        @test length(events) == 2
-        @test (events == [ ME("ERROR: Expecting the start of a markup declaration.", L.Location("a buffer", -1)),
-                           DC("ATTLIST", false, L.Location("a buffer", -1)) ])
-    end
-
     @testset "Events/Markup Declarations (Negative ... invalid token after <!)" begin
         events = evaluate("<!")
         @test (events == [ ME("ERROR: Expecting the start of a markup declaration.", L.Location("a buffer", -1)) ])
@@ -34,12 +27,6 @@
 
         # Look for the lowercased-versions of the correct keywords. These are valid in SGML, but invalid in XML.
         #
-        events = evaluate("<!attlist")
-        @test length(events) == 3
-        @test (events == [ ME("ERROR: The keyword 'attlist' must be uppercased.", L.Location("a buffer", -1)),
-                           ME("ERROR: Expecting the start of a markup declaration.", L.Location("a buffer", -1)),
-                           DC("attlist", false, L.Location("a buffer", -1)) ])
-
         events = evaluate("<!doctype")
         @test length(events) == 2
         @test (events == [ ME("ERROR: The keyword 'doctype' must be uppercased.", L.Location("a buffer", -1)),
