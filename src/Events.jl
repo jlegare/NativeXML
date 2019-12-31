@@ -330,7 +330,7 @@ ConditionalSectionStart(conditional, location) = ConditionalSectionStart(false, 
 ElementEnd(name, location) = ElementEnd(false, name, location)
 ElementStart(name, attributes, location) = ElementStart(false, name, attributes, location)
 ElementStart(is_empty, name, attributes, location) = ElementStart(false, is_empty, name, attributes, location)
-DataContent(tokens::Array, location) = DataContent(join(map(token -> token.value, tokens), ""), location)
+DataContent(tokens::Array, location) = DataContent(stringify(tokens), location)
 DataContent(value, location) = DataContent(value, false, location)
 
 
@@ -1219,8 +1219,7 @@ function processing_instruction(tokens, channel)
 
                 if is_token(Lexical.tagc, tokens)
                     take!(tokens)
-                    put!(channel, ProcessingInstruction(target.value, join(map(value -> value.value, consumed), ""),
-                                                        Lexical.location_of(pio)))
+                    put!(channel, ProcessingInstruction(target.value, stringify(consumed), Lexical.location_of(pio)))
                     break
 
                 else
@@ -1854,8 +1853,8 @@ function locations_of(leader, consumed)
 end
 
 
-function stringify(consumed_tokens)
-    return join(map(value -> value.value, consumed_tokens), "")
+function stringify(tokens)
+    return join(map(token -> token.value, tokens), "")
 end
 
 end
