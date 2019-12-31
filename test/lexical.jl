@@ -38,6 +38,14 @@
         @test evaluate("</") == [ L.Token(L.etago, "</", L.Location("a buffer", -1)) ]
     end
 
+    @testset "Lexical/Troublesome Tokens (Illegal Character)" begin
+        # Might as well try them all ... this doesn't take long.
+        #
+        for character ∈ vcat('\u00':'\u08', '\u0e':'\u1f', '\ud800':'\udfff', [ '\u0b', '\u0c', '\ufffe', '\uffff' ])
+            @test evaluate(string(character)) == [ L.Token(L.illegal, string(character), L.Location("a buffer", -1)) ]
+        end
+    end
+
     @testset "Lexical/Troublesome Tokens (One Character)" begin
         @test evaluate("#") == [ L.Token(L.text, "#", L.Location("a buffer", -1)) ]
     end

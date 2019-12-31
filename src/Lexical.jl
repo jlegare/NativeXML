@@ -55,7 +55,9 @@ export location_of
     #
     ws      # XML white-space ... see [2], § 2.3
     eoi     # end of input
-    text    # anything else
+    text    # anything else, except ...
+
+    illegal # this
 end
 
 # ----------------------------------------
@@ -122,8 +124,9 @@ const OneCharacterTokens = Dict('>'  => mdc, # Again, this will never show up ..
                                 '>'  => tagc,
                                 '/'  => net,
                                 '='  => vi)
-const TokenStarts = Set([ '\"', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '/', ';', '<', '=', '>', '?', '[', ']', '|' ])
-const WhiteSpaces = Set([ '\u20', '\u09', '\u0a', '\u0d' ])
+const IllegalCharacters = Set(vcat('\u00':'\u08', '\u0e':'\u1f', '\ud800':'\udfff', [ '\u0b', '\u0c', '\ufffe', '\uffff' ]))
+const TokenStarts       = Set([ '\"', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '/', ';', '<', '=', '>', '?', '[', ']', '|' ])
+const WhiteSpaces       = Set([ '\u20', '\u09', '\u0a', '\u0d' ])
 
 # ----------------------------------------
 # FUNCTIONS
@@ -213,17 +216,39 @@ end
 
 
 function is_delimiter_one(state::State)::Bool
+    start = mark(state.io)
+    token_value = read(state.io, Char)
+    current = position(state.io)
+    reset(state.io)
+
+    if haskey(OneCharacterTokens, token_value)
+        state.last_match = [ token_value ]
+        state.length_of  = current - start
+
+        return true
+
+    else
+        return false
+    end
+end
+
+
+function is_delimiter_two(state::State)::Bool
+    start = mark(state.io)
+    first = read(state.io, Char)
+
     if eof(state.io)
+        reset(state.io)
+
         return false
 
     else
-        start = mark(state.io)
-        token_value = read(state.io, Char)
+        second = read(state.io, Char)
         current = position(state.io)
         reset(state.io)
 
-        if haskey(OneCharacterTokens, token_value)
-            state.last_match = [ token_value ]
+        if haskey(TwoCharacterTokens, [ first, second ])
+            state.last_match = [ first, second ]
             state.length_of  = current - start
 
             return true
@@ -235,78 +260,36 @@ function is_delimiter_one(state::State)::Bool
 end
 
 
-function is_delimiter_two(state::State)::Bool
-    if eof(state.io)
-        return false
-
-    else
-        start = mark(state.io)
-        first = read(state.io, Char)
-
-        if eof(state.io)
-            reset(state.io)
-
-            return false
-
-        else
-            second = read(state.io, Char)
-            current = position(state.io)
-            reset(state.io)
-
-            if haskey(TwoCharacterTokens, [ first, second ])
-                state.last_match = [ first, second ]
-                state.length_of  = current - start
-
-                return true
-
-            else
-                return false
-            end
-        end
-    end
-end
-
-
 function is_text(state::State)::Bool
-    if eof(state.io)
-        return false
+    start = mark(state.io)
+    ( bytes_read, token_value ) = consume_until(state, ∪(TokenStarts, WhiteSpaces, IllegalCharacters))
+    reset(state.io)
+
+    if length(token_value) > 0
+        state.last_match = token_value
+        state.length_of  = bytes_read
+
+        return true
 
     else
-        start = mark(state.io)
-        ( bytes_read, token_value ) = consume_until(state, union(TokenStarts, WhiteSpaces))
-        reset(state.io)
-
-        if length(token_value) > 0
-            state.last_match = token_value
-            state.length_of  = bytes_read
-
-            return true
-
-        else
-            return false
-        end
+        return false
     end
 end
 
 
 function is_white_space(state::State)::Bool
-    if eof(state.io)
-        return false
+    start = mark(state.io)
+    ( bytes_read, token_value ) = consume_while(state, WhiteSpaces)
+    reset(state.io)
+
+    if length(token_value) > 0
+        state.last_match = token_value
+        state.length_of  = bytes_read
+
+        return true
 
     else
-        start = mark(state.io)
-        ( bytes_read, token_value ) = consume_while(state, WhiteSpaces)
-        reset(state.io)
-
-        if length(token_value) > 0
-            state.last_match = token_value
-            state.length_of  = bytes_read
-
-            return true
-
-        else
-            return false
-        end
+        return false
     end
 end
 
@@ -330,21 +313,13 @@ function tokens(state::State)
             return Token(ws, String(consume_last_match(state)), state)
 
         else
-            # I should probably throw an error here.
-            #
-            return nothing
+            return Token(illegal, string(read(state.io, Char)), state)
         end
     end
 
     function tokenized(channel::Channel)
-        while true
-            token = next(state)
-            if token == nothing
-                break
-
-            else
-                put!(channel, token)
-            end
+        while !eof(state.io)
+            put!(channel, next(state))
         end
     end
 
