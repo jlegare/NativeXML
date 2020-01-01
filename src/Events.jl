@@ -398,6 +398,19 @@ function Base.:(==)(left::AttributeDeclarations, right::AttributeDeclarations)
 end
 
 
+function Base.:(==)(left::AttributeDeclaration, right::AttributeDeclaration)
+    return (left.is_recovery == right.is_recovery
+            && left.name     == right.name
+            && left.type     == right.type
+            && left.default  == right.default)
+end
+
+
+function Base.:(==)(left::EnumeratedType, right::EnumeratedType)
+    return left.nmtokens == right.nmtokens
+end
+
+
 function attribute_declarations(mdo, tokens, channel)
     function attribute_declaration(element_name, tokens, channel)
         attribute_name = take!(tokens) # Collect the attribute name token that got us here ...
