@@ -559,7 +559,9 @@ function attribute_declarations(mdo, tokens, channel)
     end
 
     attlist = take!(tokens) # Consume the ATTLIST keyword that got us here.
-    ws = consume_white_space!(tokens)
+    ws      = consume_white_space!(tokens)
+
+    is_recovery = false
 
     if isnothing(ws)
         # See [1], § 3.3 ... the white space is required.
