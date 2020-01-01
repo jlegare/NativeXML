@@ -318,6 +318,7 @@ struct AttributeDeclarations
     is_recovery  ::Bool # This is a synthesized attribute, synthesized from the contained AttributeDeclaration children.
     name         ::String
     declarations ::Array{AttributeDeclaration, 1}
+    location     ::Lexical.Location
 end
 
 # ----------------------------------------
@@ -602,7 +603,7 @@ function attribute_declarations(mdo, tokens, channel)
 
         is_recovery = any(vcat(is_recovery, map(declaration -> declaration.is_recovery, attribute_declarations)))
 
-        put!(channel, AttributeDeclarations(is_recovery, element_name.value, attribute_declarations))
+        put!(channel, AttributeDeclarations(is_recovery, element_name.value, attribute_declarations, Lexical.location_of(mdo)))
 
     else
         put!(channel, MarkupError("ERROR: Expecting an element name.", Lexical.location_of(attlist)))
