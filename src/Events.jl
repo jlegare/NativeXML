@@ -390,6 +390,14 @@ function Base.:(==)(left::SequenceGroup, right::SequenceGroup)
 end
 
 
+function Base.:(==)(left::AttributeDeclarations, right::AttributeDeclarations)
+    return (left.is_recovery     == right.is_recovery
+            && left.name         == right.name
+            && left.declarations == right.declarations
+            && left.location     == right.location)
+end
+
+
 function attribute_declarations(mdo, tokens, channel)
     function attribute_declaration(element_name, tokens, channel)
         attribute_name = take!(tokens) # Collect the attribute name token that got us here ...
