@@ -411,6 +411,16 @@ function Base.:(==)(left::EnumeratedType, right::EnumeratedType)
 end
 
 
+function Base.:(==)(left::EnumeratedNotationType, right::EnumeratedNotationType)
+    return left.names == right.names
+end
+
+
+function Base.:(==)(left::DefaultValue, right::DefaultValue)
+    return left.value == right.value
+end
+
+
 function attribute_declarations(mdo, tokens, channel)
     function attribute_declaration(element_name, tokens, channel)
         attribute_name = take!(tokens) # Collect the attribute name token that got us here ...
