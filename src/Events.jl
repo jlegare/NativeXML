@@ -520,13 +520,14 @@ function attribute_declarations(mdo, tokens, channel)
 
             # Regardless of whether or not we saw GRPO, try parsing the group as a recovery mechanism.
             #
-            ( names_recovery, names ) = collect_group(is_name, "ERROR: Expecting a name for an enumerated attribute value.",
+            ( names_recovery, names ) = collect_group(notation, is_name,
+                                                      "ERROR: Expecting a name for an enumerated attribute value.",
                                                       tokens, channel)
             is_recovery = any([ is_recovery, names_recovery ])
             attribute_type = EnumeratedNotationType(names)
 
         elseif is_token(Lexical.grpo, tokens)
-            ( nmtokens_recovery, nmtokens ) = collect_group(is_nmtoken,
+            ( nmtokens_recovery, nmtokens ) = collect_group(attribute_name, is_nmtoken,
                                                             "ERROR: Expecting a NMTOKEN for an enumerated attribute value.",
                                                             tokens, channel)
             is_recovery = any([ is_recovery, nmtokens_recovery ])
@@ -539,9 +540,13 @@ function attribute_declarations(mdo, tokens, channel)
         return ( is_recovery, attribute_type )
     end
 
-    function collect_group(matcher, message, tokens, channel)
-        grpo = take!(tokens)
-        consume_white_space!(tokens)
+    function collect_group(token, matcher, message, tokens, channel)
+        # Careful here ... we're called whether or not the GRPO was present. So only consume it if it's there.
+        #
+        if is_token(Lexical.grpo, tokens)
+            grpo = take!(tokens)
+            consume_white_space!(tokens)
+        end
 
         items = Array{String, 1}()
         is_recovery = false
@@ -554,11 +559,11 @@ function attribute_declarations(mdo, tokens, channel)
             elseif is_token(Lexical.or, tokens) || is_token(Lexical.grpc, tokens)
                 # Leave the token there ... we'll consume it below.
                 #
-                put!(channel, MarkupError(message, Lexical.location_of(grpo)))
+                put!(channel, MarkupError(message, Lexical.location_of(token)))
                 is_recovery = true
 
             else
-                put!(channel, MarkupError(message, Lexical.location_of(grpo)))
+                put!(channel, MarkupError(message, Lexical.location_of(token)))
                 is_recovery = true
                 take!(tokens) # Drop the token and try recovering.
                 consume_white_space!(tokens)
@@ -575,13 +580,11 @@ function attribute_declarations(mdo, tokens, channel)
 
             elseif matcher(tokens)
                 put!(channel, MarkupError("ERROR: Expecting '|' between items in an enumerated attribute value.",
-                                          Lexical.location_of(grpo)))
+                                          Lexical.location_of(token)))
                 is_recovery = true
-                push!(items, take!(tokens).value)
-                consume_white_space!(tokens)
 
             else
-                put!(channel, MarkupError("ERROR: Expecting '|' or ')'.", Lexical.location_of(grpo)))
+                put!(channel, MarkupError("ERROR: Expecting '|' or ')'.", Lexical.location_of(token)))
                 is_recovery = true
                 break
             end

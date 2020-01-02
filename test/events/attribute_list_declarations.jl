@@ -407,4 +407,152 @@
                                    DefaultValue(true, [ DC("value", false, L.Location("a buffer", -1))])) ],
                               L.Location("a buffer", -1)) ]
     end
+
+    @testset "Events/Attribute List Declarations (Negative ... missing element name)" begin
+        events = evaluate("<!ATTLIST")
+        @test events == [ ME("ERROR: White space is required following the 'ATTLIST' keyword.", L.Location("a buffer", -1)),
+                          ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)) ]
+
+        events = evaluate("<!ATTLIST ")
+        @test events == [ ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)) ]
+
+        events = evaluate("<!ATTLIST >")
+        @test events == [ ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)),
+                          DC(">", false, L.Location("a buffer", -1)) ]
+    end
+
+    @testset "Events/Attribute List Declarations (Negative ... missing TAGC)" begin
+        events = evaluate("<!ATTLIST e")
+        @test events == [ ME("ERROR: Expecting '>' to end an attribute list declaration.", L.Location("a buffer", -1)),
+                          ADs(true, "e", [ ], L.Location("a buffer", -1)) ]
+
+        events = evaluate("<!ATTLIST e ")
+        @test events == [ ME("ERROR: Expecting '>' to end an attribute list declaration.", L.Location("a buffer", -1)),
+                          ADs(true, "e", [ ], L.Location("a buffer", -1)) ]
+
+        events = evaluate("<!ATTLIST e a CDATA #IMPLIED")
+        @test events == [ ME("ERROR: Expecting '>' to end an attribute list declaration.", L.Location("a buffer", -1)),
+                          ADs(true, "e", [ AD(false, "a", CData(), Implied()) ], L.Location("a buffer", -1)) ]
+    end
+
+    @testset "Events/Attribute List Declarations (Negative ... missing attribute name)" begin
+        # This is tricky, because in the absence of an attribute name, any of the attribute types will be interpreted as
+        # the attribute name, and the error will occur later. So we'll use an enumerated attribute type, which starts
+        # with '('.
+        #
+        events = evaluate("<!ATTLIST e (a) #IMPLIED>")
+        @test events == [ ME("ERROR: Expecting '>' to end an attribute list declaration.", L.Location("a buffer", -1)),
+                          ADs(true, "e", [ ], L.Location("a buffer", -1)),
+                          DC("(", false, L.Location("a buffer", -1)),
+                          DC("a", false, L.Location("a buffer", -1)),
+                          DC(")", false, L.Location("a buffer", -1)),
+                          DC(" ", true, L.Location("a buffer", -1)),
+                          DC("#IMPLIED", false, L.Location("a buffer", -1)),
+                          DC(">", false, L.Location("a buffer", -1)) ]
+
+        events = evaluate("<!ATTLIST e(a) #IMPLIED>")
+        @test events == [ ME("ERROR: Expecting '>' to end an attribute list declaration.", L.Location("a buffer", -1)),
+                          ADs(true, "e", [ ], L.Location("a buffer", -1)),
+                          DC("(", false, L.Location("a buffer", -1)),
+                          DC("a", false, L.Location("a buffer", -1)),
+                          DC(")", false, L.Location("a buffer", -1)),
+                          DC(" ", true, L.Location("a buffer", -1)),
+                          DC("#IMPLIED", false, L.Location("a buffer", -1)),
+                          DC(">", false, L.Location("a buffer", -1)) ]
+    end
+
+    @testset "Events/Attribute List Declarations (Negative ... missing/invalid attribute type)" begin
+        events = evaluate("<!ATTLIST e a #IMPLIED>")
+        @test events == [ ME("ERROR: Expecting an attribute type.", L.Location("a buffer", -1)),
+                          ADs(false, "e", [ AD(false, "a", Main.Events.StringType(), Implied()) ], L.Location("a buffer", -1)) ]
+
+        # The attribute type is misspelled here. I purposefully chose something other than CDATA, to nail down the
+        # recovery for the attribute type ... i.e., the fallback to CDATA.
+        #
+        events = evaluate("<!ATTLIST e a ENTITIE #IMPLIED>")
+        @test events == [ ME("ERROR: Expecting an attribute type.", L.Location("a buffer", -1)),
+                          ME("ERROR: Expecting a quoted attribute value.", L.Location("a buffer", -1)),
+                          ME("ERROR: Expecting '>' to end an attribute list declaration.", L.Location("a buffer", -1)),
+                          ADs(true, "e", [ AD(true, "a", CData(), DefaultValue(false, [ ])) ], L.Location("a buffer", -1)),
+                          DC("ENTITIE", false, L.Location("a buffer", -1)),
+                          DC(" ", true, L.Location("a buffer", -1)),
+                          DC("#IMPLIED", false, L.Location("a buffer", -1)),
+                          DC(">", false, L.Location("a buffer", -1)) ]
+    end
+
+    @testset "Events/Attribute List Declarations (Negative ... NOTATION missing TAGO for group)" begin
+        events = evaluate("<!ATTLIST e a NOTATION a | b) #IMPLIED>")
+        @test events == [  ME("ERROR: Expecting '(' to open an enumerated notation attribute value.", L.Location("a buffer", -1)),
+                           ADs(false, "e", [ AD(false, "a", Notations([ "a", "b" ]), Implied()) ], L.Location("a buffer", -1)) ]
+
+    end
+
+    @testset "Events/Attribute List Declarations (Negative ... NOTATION missing white space)" begin
+        events = evaluate("<!ATTLIST e a NOTATION(a | b) #IMPLIED>")
+        @test events == [  ME("ERROR: White space is required following the 'NOTATION' keyword.", L.Location("a buffer", -1)),
+                           ADs(false, "e", [ AD(false, "a", Notations([ "a", "b" ]), Implied()) ], L.Location("a buffer", -1)) ]
+
+    end
+
+    @testset "Events/Attribute List Declarations (Negative ... NOTATION missing TAGC for group)" begin
+        events = evaluate("<!ATTLIST e a NOTATION (a | b #IMPLIED>")
+        @test events == [  ME("ERROR: Expecting '|' or ')'.", L.Location("a buffer", -1)),
+                           ADs(true, "e", [ AD(true, "a", Notations([ "a", "b" ]), Implied()) ], L.Location("a buffer", -1)) ]
+
+    end
+
+    @testset "Events/Attribute List Declarations (Negative ... missing TAGC for group)" begin
+        events = evaluate("<!ATTLIST e a (a | b #IMPLIED>")
+        @test events == [  ME("ERROR: Expecting '|' or ')'.", L.Location("a buffer", -1)),
+                           ADs(true, "e", [ AD(true, "a", Enumerated([ "a", "b" ]), Implied()) ], L.Location("a buffer", -1)) ]
+
+    end
+
+    @testset "Events/Attribute List Declarations (Negative ... invalid group)" begin
+        events = evaluate("<!ATTLIST e a (| b) #IMPLIED>")
+        @test events == [  ME("ERROR: Expecting a NMTOKEN for an enumerated attribute value.", L.Location("a buffer", -1)),
+                           ADs(true, "e", [ AD(true, "a", Enumerated([ "b" ]), Implied()) ], L.Location("a buffer", -1)) ]
+
+        events = evaluate("<!ATTLIST e a NOTATION (| b) #IMPLIED>")
+        @test events == [  ME("ERROR: Expecting a name for an enumerated attribute value.", L.Location("a buffer", -1)),
+                           ADs(true, "e", [ AD(true, "a", Notations([ "b" ]), Implied()) ], L.Location("a buffer", -1)) ]
+
+        events = evaluate("<!ATTLIST e a (< | b) #IMPLIED>")
+        @test events == [  ME("ERROR: Expecting a NMTOKEN for an enumerated attribute value.", L.Location("a buffer", -1)),
+                           ADs(true, "e", [ AD(true, "a", Enumerated([ "b" ]), Implied()) ], L.Location("a buffer", -1)) ]
+
+        events = evaluate("<!ATTLIST e a NOTATION (< | b) #IMPLIED>")
+        @test events == [  ME("ERROR: Expecting a name for an enumerated attribute value.", L.Location("a buffer", -1)),
+                           ADs(true, "e", [ AD(true, "a", Notations([ "b" ]), Implied()) ], L.Location("a buffer", -1)) ]
+
+        events = evaluate("<!ATTLIST e a (a b) #IMPLIED>")
+        @test events == [  ME("ERROR: Expecting '|' between items in an enumerated attribute value.", L.Location("a buffer", -1)),
+                           ADs(true, "e", [ AD(true, "a", Enumerated([ "a", "b" ]), Implied()) ], L.Location("a buffer", -1)) ]
+
+        events = evaluate("<!ATTLIST e a NOTATION (a b) #IMPLIED>")
+        @test events == [  ME("ERROR: Expecting '|' between items in an enumerated attribute value.", L.Location("a buffer", -1)),
+                           ADs(true, "e", [ AD(true, "a", Notations([ "a", "b" ]), Implied()) ], L.Location("a buffer", -1)) ]
+
+        events = evaluate("<!ATTLIST e a (a | b] #IMPLIED>")
+        @test events == [ ME("ERROR: Expecting '|' or ')'.", L.Location("a buffer", -1)),
+                          ME("ERROR: Expecting a quoted attribute value.", L.Location("a buffer", -1)),
+                          ME("ERROR: Expecting '>' to end an attribute list declaration.", L.Location("a buffer", -1)),
+                          ADs(true, "e", [ AD(true, "a", Enumerated([ "a", "b" ]), DefaultValue(false, [ ])) ],
+                              L.Location("a buffer", -1)),
+                          DC("]", false, L.Location("a buffer", -1)),
+                          DC(" ", true, L.Location("a buffer", -1)),
+                          DC("#IMPLIED", false, L.Location("a buffer", -1)),
+                          DC(">", false, L.Location("a buffer", -1)) ]
+
+        events = evaluate("<!ATTLIST e a NOTATION (a | b] #IMPLIED>")
+        @test events == [ ME("ERROR: Expecting '|' or ')'.", L.Location("a buffer", -1)),
+                          ME("ERROR: Expecting a quoted attribute value.", L.Location("a buffer", -1)),
+                          ME("ERROR: Expecting '>' to end an attribute list declaration.", L.Location("a buffer", -1)),
+                          ADs(true, "e", [ AD(true, "a", Notations([ "a", "b" ]), DefaultValue(false, [ ])) ],
+                              L.Location("a buffer", -1)),
+                          DC("]", false, L.Location("a buffer", -1)),
+                          DC(" ", true, L.Location("a buffer", -1)),
+                          DC("#IMPLIED", false, L.Location("a buffer", -1)),
+                          DC(">", false, L.Location("a buffer", -1)) ]
+    end
 end
