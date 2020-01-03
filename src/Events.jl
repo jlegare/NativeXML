@@ -1021,7 +1021,15 @@ function entity_declaration(mdo, tokens, channel)
 
     if is_name(tokens)
         entity_name = take!(tokens)
-        consume_white_space!(tokens)
+        ws = consume_white_space!(tokens)
+
+        if isnothing(ws)
+            # See [1], § 4.2, productions [71] and [72] ... the white space is required.
+            #
+            put!(channel, MarkupError("ERROR: White space is required between the entity name and the entity value.",
+                                      Lexical.location_of(entity)))
+        end
+
         ( external_identifier, entity_value, ndata_name ) = collect_entity_definition(entity_name, tokens, channel)
         consume_white_space!(tokens)
 

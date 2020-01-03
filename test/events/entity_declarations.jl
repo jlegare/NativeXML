@@ -86,8 +86,10 @@
         # that's allowed or not, but there doesn't appear to be anything in the specification that forbids it.
         #
         events = evaluate("<!ENTITY PUBLIC")
-        @test length(events) == 3
-        @test (events == [ ME("ERROR: Expecting a quoted string.", L.Location("a buffer", -1)),
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: White space is required between the entity name and the entity value.",
+                              L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", L.Location("a buffer", -1)),
                            ME("ERROR: Expecting '>' to end an entity declaration.", L.Location("a buffer", -1)),
                            ExternalGeneralText("PUBLIC", L.Location("a buffer", -1)) ])
 
@@ -111,8 +113,10 @@
 
     @testset "Events/Entity Declarations, Internal General (Negative ... missing entity value.)" begin
         events = evaluate("<!ENTITY e")
-        @test length(events) == 3
-        @test (events == [ ME("ERROR: Expecting a quoted string.", L.Location("a buffer", -1)),
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: White space is required between the entity name and the entity value.",
+                              L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", L.Location("a buffer", -1)),
                            ME("ERROR: Expecting '>' to end an entity declaration.", L.Location("a buffer", -1)),
                            ExternalGeneralText("e", L.Location("a buffer", -1)) ])
 
@@ -197,8 +201,10 @@
         # that's allowed or not, but there doesn't appear to be anything in the specification that forbids it.
         #
         events = evaluate("<!ENTITY % PUBLIC")
-        @test length(events) == 3
-        @test (events == [ ME("ERROR: Expecting a quoted string.", L.Location("a buffer", -1)),
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: White space is required between the entity name and the entity value.",
+                              L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", L.Location("a buffer", -1)),
                            ME("ERROR: Expecting '>' to end an entity declaration.", L.Location("a buffer", -1)),
                            ExternalParameter("PUBLIC", L.Location("a buffer", -1)) ])
 
@@ -222,8 +228,10 @@
 
     @testset "Events/Entity Declarations, Internal Parameter (Negative ... missing entity value.)" begin
         events = evaluate("<!ENTITY % e")
-        @test length(events) == 3
-        @test (events == [ ME("ERROR: Expecting a quoted string.", L.Location("a buffer", -1)),
+        @test length(events) == 4
+        @test (events == [ ME("ERROR: White space is required between the entity name and the entity value.",
+                              L.Location("a buffer", -1)),
+                           ME("ERROR: Expecting a quoted string.", L.Location("a buffer", -1)),
                            ME("ERROR: Expecting '>' to end an entity declaration.", L.Location("a buffer", -1)),
                            ExternalParameter("e", L.Location("a buffer", -1)) ])
 
