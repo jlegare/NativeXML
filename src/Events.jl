@@ -1096,7 +1096,7 @@ function events(state::Lexical.State)
                 put!(channel, collect_entity_reference(tokens, channel))
 
             elseif is_token(Lexical.pero, tokens)
-                put!(channel, collect_parameter_entity_reference(tokens))
+                put!(channel, collect_parameter_entity_reference(tokens, channel))
 
             elseif is_token(Lexical.pio, tokens)
                 processing_instruction(tokens, channel)
@@ -1160,8 +1160,8 @@ function marked_section(mdo, tokens, channel)
         conditional_marked_section(mdo, dso, conditional.value, tokens, channel)
 
     elseif is_token(Lexical.pero, tokens)
-        conditional = collect_parameter_entity_reference(tokens) # Consume the parameter entity reference ...
-        consume_white_space!(tokens)                             # ... and discard any trailing white space.
+        conditional = collect_parameter_entity_reference(tokens, channel) # Consume the parameter entity reference ...
+        consume_white_space!(tokens)                                      # ... and discard any trailing white space.
 
         conditional_marked_section(mdo, dso, conditional, tokens, channel)
 
@@ -1687,7 +1687,7 @@ function collect_occurrence_indicator(content_model, tokens)
 end
 
 
-function collect_parameter_entity_reference(tokens)
+function collect_parameter_entity_reference(tokens, channel)
     pero = take!(tokens) # Consume the PERO token that got us here.
 
     if is_name(tokens)
@@ -1698,11 +1698,17 @@ function collect_parameter_entity_reference(tokens)
             return EntityReferenceParameter(name.value, Lexical.location_of(pero))
 
         else
-            return MarkupError("ERROR: Expecting ';' to end a parameter entity reference.", Lexical.location_of(name))
+            put!(channel, MarkupError("ERROR: Expecting ';' to end a parameter entity reference.", Lexical.location_of(name)))
+
+            # Let's assume we saw the REFC.
+            #
+            return EntityReferenceParameter(name.value, Lexical.location_of(pero))
         end
 
     else
-        return MarkupError("ERROR: Expecting a parameter entity name.", Lexical.location_of(pero))
+        put!(channel, MarkupError("ERROR: Expecting a parameter entity name.", Lexical.location_of(pero)))
+
+        return DataContent([ pero ], Lexical.location_of(pero))
     end
 end
 
