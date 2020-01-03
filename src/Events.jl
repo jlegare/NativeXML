@@ -152,7 +152,7 @@ end
 
 
 struct ProcessingInstruction
-    target   ::String # It's someone else's job to verify that this isn't some case variant of "XML".
+    target   ::String
     value    ::String
     location ::Lexical.Location
 end
