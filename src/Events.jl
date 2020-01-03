@@ -76,11 +76,6 @@ struct DTDStart
 end
 
 
-struct DTDInternalEnd
-    location ::Lexical.Location
-end
-
-
 struct DTDInternalStart
     location ::Lexical.Location
 end
