@@ -1116,6 +1116,12 @@ function events(state::Lexical.State)
                     ws = consume_white_space!(tokens)
                     push!(channel, DataContent(ws.value, true, Lexical.location_of(ws)))
 
+                elseif is_token(Lexical.illegal, tokens)
+                    token = take!(tokens)
+                    put!(channel, MarkupError("ERROR: Encountered the illegal character \'"
+                                              * "#x" * string(Int(token.value[1]), base = 16) * "\'."
+                                              * " It will be discarded.", Lexical.location_of(token)))
+
                 else
                     token = take!(tokens)
                     push!(channel, DataContent(token.value, Lexical.location_of(token)))

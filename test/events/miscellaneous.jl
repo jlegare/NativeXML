@@ -1,10 +1,15 @@
 @testset "Events/Miscellaneous" begin
     # These test sets are a grab bag of tests that don't fit anywhere else.
     #
+    evaluate(s) = collect(E.events(L.State(IOBuffer(s))))
     tokenize(s) = L.tokens(L.State(IOBuffer(s)))
 
     E = Events
     L = Events.Lexical
+
+    ME = E.MarkupError
+
+    illegal_characters = Set(vcat('\u00':'\u08', '\u0e':'\u1f', '\ud800':'\udfff', [ '\u0b', '\u0c', '\ufffe', '\uffff' ]))
 
     name_start_chars = [ Char(':'), Char('A'):Char('Z'), Char('a'):Char('z'),
                          0xc0:0xd6, 0xd8:0xf6, 0xf8:0x2ff, 0x370:0x37d, 0x37f:0x1fff,
@@ -209,6 +214,15 @@
         for input ∈ [ "+", "<", "<!", " ", "<?", "?>", ">", "" ]
             tokens = tokenize(input)
             @test !E.is_nmtoken(tokens)
+        end
+    end
+
+    @testset "Events/Miscellaneous, is_nmtoken() (Negative ... illegal characters)" begin
+        for character ∈ illegal_characters
+            events = evaluate(string(character))
+            @test events == [ ME("ERROR: Encountered the illegal character \'"
+                                 * "#x" * string(Int(character), base = 16) * "\'." * " It will be discarded.",
+                                 L.Location("a buffer", -1)) ]
         end
     end
 end

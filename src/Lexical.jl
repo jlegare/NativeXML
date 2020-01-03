@@ -57,7 +57,7 @@ export location_of
     eoi     # end of input
     text    # anything else, except ...
 
-    illegal # this
+    illegal # this is not actually used in XML.
 end
 
 # ----------------------------------------
