@@ -154,28 +154,28 @@
     @testset "Events/Element Declarations, Mixed Content (Negative ... missing element name)" begin
         @test (evaluate("<!ELEMENT a (#PCDATA||b)*>")
                == [ ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)),
-                    ED(false, "a", CMMixed([ CMElement("b") ]), L.Location("a buffer", -1)) ])
+                    ED(true, "a", CMMixed([ CMElement("b") ]), L.Location("a buffer", -1)) ])
 
         @test (evaluate("<!ELEMENT a (#PCDATA|)*>")
                == [ ME("ERROR: Expecting an element name.", L.Location("a buffer", -1)),
-                    ED(false, "a", CMMixed([ ]), L.Location("a buffer", -1)) ])
+                    ED(true, "a", CMMixed([ ]), L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Element Declarations, Mixed Content (Negative ... missing separator)" begin
         @test (evaluate("<!ELEMENT a (#PCDATA b)*>")
                == [ ME("ERROR: Items in a mixed content model must be separated by '|'.", L.Location("a buffer", -1)),
-                    ED(false, "a", CMMixed([ CMElement("b") ]), L.Location("a buffer", -1)) ])
+                    ED(true, "a", CMMixed([ CMElement("b") ]), L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Element Declarations, Mixed Content (Negative ... out of position #PCDATA)" begin
         @test (evaluate("<!ELEMENT a (#PCDATA|#PCDATA)>")
                == [ ME("ERROR: '#PCDATA' can only appear at the start of a mixed content model.", L.Location("a buffer", -1)),
-                    ED(false, "a", CMMixed([ ]), L.Location("a buffer", -1)) ])
+                    ED(true, "a", CMMixed([ ]), L.Location("a buffer", -1)) ])
 
         @test (evaluate("<!ELEMENT a (#PCDATA b #PCDATA)*>")
                == [ ME("ERROR: Items in a mixed content model must be separated by '|'.", L.Location("a buffer", -1)),
                     ME("ERROR: '#PCDATA' can only appear at the start of a mixed content model.", L.Location("a buffer", -1)),
-                    ED(false, "a", CMMixed([ CMElement("b") ]), L.Location("a buffer", -1)) ])
+                    ED(true, "a", CMMixed([ CMElement("b") ]), L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Element Declarations, Element Content (Positive)" begin
@@ -391,11 +391,11 @@
     @testset "Events/Element Declarations, Element Content (Negative ... mixed combinators)" begin
         @test (evaluate("<!ELEMENT a (b|c,d)>")
                == [ ME("ERROR: '|' and ',' cannot be used in the same content group.", L.Location("a buffer", -1)),
-                    ED(false, "a", Choice([ CMElement("b"), CMElement("c"), CMElement("d") ]), L.Location("a buffer", -1)) ])
+                    ED(true, "a", Choice([ CMElement("b"), CMElement("c"), CMElement("d") ]), L.Location("a buffer", -1)) ])
 
         @test (evaluate("<!ELEMENT a (b,c|d)>")
                == [ ME("ERROR: '|' and ',' cannot be used in the same content group.", L.Location("a buffer", -1)),
-                    ED(false, "a", Sequence([ CMElement("b"), CMElement("c"), CMElement("d") ]), L.Location("a buffer", -1)) ])
+                    ED(true, "a", Sequence([ CMElement("b"), CMElement("c"), CMElement("d") ]), L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Element Declarations, Element Content (Negative ... missing separator)" begin
@@ -403,11 +403,11 @@
         #
         @test (evaluate("<!ELEMENT a (b|c d)>")
                == [ ME("ERROR: Expecting '|'.", L.Location("a buffer", -1)),
-                    ED(false, "a", Choice([ CMElement("b"), CMElement("c"), CMElement("d") ]), L.Location("a buffer", -1)) ])
+                    ED(true, "a", Choice([ CMElement("b"), CMElement("c"), CMElement("d") ]), L.Location("a buffer", -1)) ])
 
         @test (evaluate("<!ELEMENT a (b,c d)>")
                == [ ME("ERROR: Expecting ','.", L.Location("a buffer", -1)),
-                    ED(false, "a", Sequence([ CMElement("b"), CMElement("c"), CMElement("d") ]), L.Location("a buffer", -1)) ])
+                    ED(true, "a", Sequence([ CMElement("b"), CMElement("c"), CMElement("d") ]), L.Location("a buffer", -1)) ])
     end
 
     @testset "Events/Element Declarations, Element Content (Negative ... missing element name or GRPO)" begin

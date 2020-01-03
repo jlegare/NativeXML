@@ -830,7 +830,8 @@ function element_declaration(mdo, tokens, channel)
                 take!(tokens)
                 consume_white_space!(tokens)
 
-                items = collect_mixed_content_model(tokens, channel)
+                ( content_model_recovery, items ) = collect_mixed_content_model(tokens, channel)
+                is_recovery = is_recovery || content_model_recovery
 
                 if is_token(Lexical.grpc, tokens)
                     take!(tokens)
@@ -856,7 +857,8 @@ function element_declaration(mdo, tokens, channel)
                 content_model = MixedModel(items)
 
             else
-                content_model = collect_content_model_group(grpo, tokens, channel)
+                ( group_recovery, content_model ) = collect_content_model_group(grpo, tokens, channel)
+                is_recovery = is_recovery || group_recovery
 
                 if isnothing(content_model)
                     content_model = AnyModel()
@@ -1402,10 +1404,12 @@ function collect_content_model_group(grpo, tokens, channel)
         # By the time we're called, we've seen one group item and the separator (which has been consumed). See See [1],
         # § 3.2.1 ... we require another item.
         #
-        items = Array{AbstractModel, 1}()
+        is_recovery = false
+        items       = Array{AbstractModel, 1}()
 
         while true
-            item = collect_content_model_group_item(grpo, tokens, channel)
+            ( item_recovery, item ) = collect_content_model_group_item(grpo, tokens, channel)
+            is_recovery = is_recovery || item_recovery
 
             if isnothing(item)
                 break
@@ -1422,41 +1426,45 @@ function collect_content_model_group(grpo, tokens, channel)
                 s = take!(tokens)
                 consume_white_space!(tokens)
                 put!(channel, MarkupError("ERROR: '|' and ',' cannot be used in the same content group.", Lexical.location_of(s)))
+                is_recovery = true
 
             elseif is_token(Lexical.grpc, tokens)
                 break
 
             else
                 put!(channel, MarkupError("ERROR: Expecting '" * separator.value * "'.", Lexical.location_of(grpo)))
+                is_recovery = true
             end
         end
 
-        return items
+        return ( is_recovery, items )
     end
 
 
-    first_item = collect_content_model_group_item(grpo, tokens, channel)
+    ( is_recovery, first_item ) = collect_content_model_group_item(grpo, tokens, channel)
 
     if isnothing(first_item)
-        return first_item
+        return ( true, first_item )
     end
 
     if is_token(Lexical.or, tokens) || is_token(Lexical.seq, tokens)
         separator = take!(tokens)
         consume_white_space!(tokens)
 
-        items = collect_content_model_group_items(grpo, separator, tokens, channel)
+        ( group_recovery, items ) = collect_content_model_group_items(grpo, separator, tokens, channel)
+        is_recovery = is_recovery || group_recovery
+
         pushfirst!(items, first_item)
 
         if separator.token_type == Lexical.or
-            return ChoiceGroup(items)
+            return ( is_recovery, ChoiceGroup(items) )
 
         else
-            return SequenceGroup(items)
+            return ( is_recovery, SequenceGroup(items) )
         end
 
     else
-        return first_item
+        return ( false, first_item )
     end
 end
 
@@ -1466,13 +1474,13 @@ function collect_content_model_group_item(grpo, tokens, channel)
         name = take!(tokens)
         consume_white_space!(tokens)
 
-        return ElementModel(name.value)
+        return ( false, ElementModel(name.value) )
 
     elseif is_token(Lexical.grpo, tokens)
         grpo = take!(tokens)
         consume_white_space!(tokens)
 
-        item = collect_content_model_group(grpo, tokens, channel)
+        ( is_recovery, item ) = collect_content_model_group(grpo, tokens, channel)
 
         if is_token(Lexical.grpc, tokens)
             take!(tokens)
@@ -1482,18 +1490,19 @@ function collect_content_model_group_item(grpo, tokens, channel)
             take!(tokens)
             consume_white_space!(tokens)
             put!(channel, MarkupError("ERROR: Expecting ')' to end a content model group.", Lexical.location_of(grpo)))
+            is_recovery = true
         end
 
         item = collect_occurrence_indicator(item, tokens)
 
         consume_white_space!(tokens) # In case we saw an occurrence indicator.
 
-        return item
+        return ( is_recovery, item )
 
     else
         put!(channel, MarkupError("ERROR: Expecting an element name or '('.", Lexical.location_of(grpo)))
 
-        return nothing
+        return ( true, nothing )
     end
 end
 
@@ -1592,7 +1601,8 @@ end
 
 
 function collect_mixed_content_model(tokens, channel)
-    items = Array{AbstractModel, 1}()
+    is_recovery = false
+    items       = Array{AbstractModel, 1}()
 
     while true
         if is_token(Lexical.or, tokens)
@@ -1607,6 +1617,7 @@ function collect_mixed_content_model(tokens, channel)
             elseif is_reserved_name("#PCDATA", tokens, channel)
                 put!(channel, MarkupError("ERROR: '#PCDATA' can only appear at the start of a mixed content model.",
                                           Lexical.location_of(or)))
+                is_recovery = true
                 take!(tokens)
                 consume_white_space!(tokens)
 
@@ -1615,9 +1626,11 @@ function collect_mixed_content_model(tokens, channel)
                 # consume it ... we're going to consume it as soon as we wrap around, on the next iteration.
                 #
                 put!(channel, MarkupError("ERROR: Expecting an element name.", Lexical.location_of(or)))
+                is_recovery = true
 
             else
                 put!(channel, MarkupError("ERROR: Expecting an element name.", Lexical.location_of(or)))
+                is_recovery = true
                 break
             end
 
@@ -1625,12 +1638,14 @@ function collect_mixed_content_model(tokens, channel)
             name = take!(tokens)
             consume_white_space!(tokens)
             put!(channel, MarkupError("ERROR: Items in a mixed content model must be separated by '|'.", Lexical.location_of(name)))
+            is_recovery = true
             push!(items, ElementModel(name.value))
 
         elseif is_reserved_name("#PCDATA", tokens, channel)
             t = take!(tokens)
             put!(channel, MarkupError("ERROR: '#PCDATA' can only appear at the start of a mixed content model.",
                                       Lexical.location_of(t)))
+            is_recovery = true
             consume_white_space!(tokens)
 
         else
@@ -1638,7 +1653,7 @@ function collect_mixed_content_model(tokens, channel)
         end
     end
 
-    return items
+    return ( is_recovery, items )
 end
 
 
